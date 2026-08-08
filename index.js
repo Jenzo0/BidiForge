@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.2 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.3 Engine)
  * Universal BiDi Compatibility Layer for Electron
- * Cyberpunk Box Containers, Arrow Key Navigation (↑/↓), Animated Spinners, & Status Badges
+ * OpenCode-CLI Inspired TUI: 78-Char Cyberpunk Box Containers, Arrow Key Navigation, Multi-Select Checkboxes, Tips Footer
  * 
- * @version 3.2.0
+ * @version 3.3.0
  * @author Jenzo0
  */
 
@@ -23,26 +23,26 @@ const inspector = require('./core/inspector');
 const watcher = require('./core/watcher');
 const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
-const { promptSelect, createSpinner, printBox, formatBoxLine, beep, C } = require('./ui/menu');
+const { promptSelect, promptMultiSelect, createSpinner, printBox, formatBoxLine, beep, C } = require('./ui/menu');
 
-const VERSION = '3.2.0';
+const VERSION = '3.3.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
- * Print stylized Cyberpunk ASCII banner with 100% pixel-perfect symmetry
+ * Print stylized Cyberpunk ASCII banner with 100% pixel-perfect 78-char symmetry
  */
 function banner() {
   console.log('');
-  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║            ${C.white}${C.bold}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}             ║${C.reset}`);
-  console.log(`${C.cyan}║                        ${C.yellow}Developer: ${DEVELOPER}${C.reset}${C.cyan}                         ║${C.reset}`);
-  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${C.reset}           ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${C.reset}           ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ${C.reset}           ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ${C.reset}           ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗${C.reset}           ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝${C.reset}           ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║                   ${C.white}${C.bold}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}                    ║${C.reset}`);
+  console.log(`${C.cyan}║                               ${C.yellow}Developer: ${DEVELOPER}${C.reset}${C.cyan}                                ║${C.reset}`);
+  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════════════════╝${C.reset}`);
   console.log('');
 }
 
@@ -168,6 +168,8 @@ async function patch(target = null, relaunch = true, force = false) {
     apps = apps.filter(a => a.name.toLowerCase().includes(query) || a.path.toLowerCase().includes(query));
   } else if (target && typeof target === 'object' && target.path) {
     apps = [target];
+  } else if (Array.isArray(target)) {
+    apps = target;
   }
   
   if (apps.length === 0) {
@@ -178,7 +180,7 @@ async function patch(target = null, relaunch = true, force = false) {
   const results = { patched: [], skipped: [], failed: [] };
   
   for (const appInfo of apps) {
-    console.log(`${C.cyan}--------------------------------------------${C.reset}`);
+    console.log(`${C.cyan}------------------------------------------------------------------------------${C.reset}`);
     console.log(` ${C.bold}Target:${C.reset} ${C.white}${appInfo.name}${C.reset} (v${appInfo.version})`);
     
     const asarPath = path.join(appInfo.path, 'resources', 'app.asar');
@@ -270,14 +272,14 @@ async function patch(target = null, relaunch = true, force = false) {
     `${C.yellow}• Skipped (Patched):    ${results.skipped.length}${C.reset}`,
     `${C.red}✖ Failed Applications:  ${results.failed.length}${C.reset}`,
   ];
-  printBox(summaryLines, 'SUMMARY REPORT');
+  printBox(summaryLines, 'SUMMARY REPORT', 'All patched applications are now active with Arabic BiDi support');
   console.log('');
   
   return results;
 }
 
 /**
- * Scan installed applications and display Cyberpunk Boxed table with status badges
+ * Scan installed applications and display 78-char Cyberpunk Boxed table with status badges
  */
 function scan() {
   logger.init();
@@ -312,7 +314,7 @@ function scan() {
     });
   });
   
-  printBox(boxLines, 'DISCOVERED ELECTRON APPLICATIONS & STATUS');
+  printBox(boxLines, 'DISCOVERED ELECTRON APPLICATIONS & STATUS', 'Select Option [2] in main menu to interactively patch applications');
   console.log('');
   return apps;
 }
@@ -377,7 +379,7 @@ function runHealthInspection(target = null) {
       boxLines.push(`${symbol} ${C.bold}${check.name}:${C.reset} ${check.detail}`);
     });
 
-    printBox(boxLines, `HEALTH REPORT: ${report.appName} (v${report.appVersion})`);
+    printBox(boxLines, `HEALTH REPORT: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection');
     console.log('');
   }
 }
@@ -540,7 +542,7 @@ function askQuestion(rl, query) {
 async function interactiveMenu() {
   const menuOptions = [
     '⚡ [1] Fast Scan & List Compatible Applications',
-    '⚙️ [2] Select Application to Patch (Interactive)',
+    '⚙️ [2] Select Applications to Patch (Multi-Checkboxes [x])',
     '🚀 [3] Patch ALL Discovered Applications',
     '🔍 [4] Search Application by Name',
     '📂 [5] Patch Custom Application Path (Enter Path)',
@@ -556,7 +558,7 @@ async function interactiveMenu() {
 
   let running = true;
   while (running) {
-    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.2 Main Menu — Navigate with ↑/↓ and press Enter:', banner);
+    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.3 Main Menu — OpenCode CLI TUI Engine:', banner);
     
     if (selectedIdx === -1 || selectedIdx === 12) {
       running = false;
@@ -567,35 +569,18 @@ async function interactiveMenu() {
     switch (selectedIdx) {
       case 0: { // Scan
         banner();
-        const apps = scan();
-        if (apps.length > 0) {
-          const appChoices = getAppSelectOptions(apps);
-          appChoices.push({ label: '🚀 Patch ALL Discovered Applications', tag: '' });
-          appChoices.push({ label: '* Back to Main Menu', tag: '' });
-
-          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:', banner);
-          if (appIdx >= 0 && appIdx < apps.length) {
-            const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-            await handleAppSelection(rl, apps[appIdx]);
-            rl.close();
-          } else if (appIdx === apps.length) {
-            await patch(null, true, false);
-          }
-        }
+        scan();
         break;
       }
         
-      case 1: { // Select App
+      case 1: { // Interactive Multi-Select Checkbox App Selection
         banner();
-        const apps = scan();
+        const apps = detector.detectAll();
         if (apps.length > 0) {
           const appChoices = getAppSelectOptions(apps);
-          appChoices.push({ label: '* Back to Main Menu', tag: '' });
-          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:', banner);
-          if (appIdx >= 0 && appIdx < apps.length) {
-            const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-            await handleAppSelection(rl, apps[appIdx]);
-            rl.close();
+          const selectedApps = await promptMultiSelect(appChoices, 'Select Applications to Patch (Space to toggle [x], Enter to confirm):', banner);
+          if (selectedApps.length > 0) {
+            await patch(selectedApps, true, false);
           }
         }
         break;
@@ -679,7 +664,7 @@ async function interactiveMenu() {
           text: `${C.cyan}[${idx+1}]${C.reset} ${C.white}${C.bold}${s.appName}${C.reset} (v${s.appVersion})`,
           tag: `${C.yellow}${s.id}${C.reset}`,
         }));
-        printBox(snapshotLines, 'VAULT SNAPSHOTS');
+        printBox(snapshotLines, 'VAULT SNAPSHOTS', 'Use "node index.js vault restore <id>" to restore any snapshot');
         break;
       }
 
