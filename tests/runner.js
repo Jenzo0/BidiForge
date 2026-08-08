@@ -137,10 +137,18 @@ test('shell.register generates valid Windows registry commands', () => {
 
 // Test Group 8: Border & Layout Alignment Test Suite
 console.log('');
-console.log('[8/8] Testing Border & Layout Alignment Engine...');
+console.log('[8/9] Testing Border & Layout Alignment Engine...');
 test('border_test suite passes all 5 alignment assertions', () => {
   const { execSync } = require('child_process');
   execSync('node tests/border_test.js', { cwd: path.join(__dirname, '..'), stdio: 'pipe' });
+});
+
+// Test Group 9: Engine Bridge JSON Contract
+console.log('');
+console.log('[9/9] Testing Engine Bridge JSON Contract...');
+test('json_contract_test suite passes all 5 schema assertions', () => {
+  const { execSync } = require('child_process');
+  execSync('node tests/json_contract_test.js', { cwd: path.join(__dirname, '..'), stdio: 'pipe' });
 });
 
 console.log('');

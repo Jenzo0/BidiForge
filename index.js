@@ -755,39 +755,75 @@ async function interactiveMenu() {
   const isJsonMode = process.argv.includes('--json');
 
   if (isJsonMode) {
+    const bridge = require('./core/bridge');
     try {
-      if (['scan', '--scan', '-s', 'status', '--status'].includes(command)) {
-        const apps = detector.detectAll();
-        console.log(JSON.stringify({ success: true, version: VERSION, operation: 'scan', apps }, null, 2));
-      } else if (['patch', '--patch'].includes(command)) {
+      if (['scan', '--scan', '-s'].includes(command)) {
+        const res = bridge.handleScanJson();
+        console.log(JSON.stringify(res, null, 2));
+        process.exit(res.success ? 0 : 1);
+      } else if (['status', '--status'].includes(command)) {
+        const res = bridge.handleStatusJson();
+        console.log(JSON.stringify(res, null, 2));
+        process.exit(res.success ? 0 : 1);
+      } else if (['patch', '--patch', 'repair', '--repair'].includes(command)) {
         const targetApp = args[1] && args[1] !== '--json' ? args[1] : null;
-        const results = await patch(targetApp);
-        console.log(JSON.stringify({ success: true, version: VERSION, operation: 'patch', results }, null, 2));
+        const isRepair = ['repair', '--repair'].includes(command);
+        const patchRes = await patch(targetApp, isRepair, isRepair, false);
+        const isSuccess = patchRes.patched.length > 0 || (patchRes.skipped.length > 0 && patchRes.failed.length === 0);
+        let exitCode = 0;
+        if (patchRes.failed.length > 0) exitCode = 1;
+        if (patchRes.patched.length === 0 && patchRes.skipped.length === 0 && patchRes.failed.length === 0) exitCode = 3;
+        
+        const res = bridge.createResponse(isRepair ? 'repair' : 'patch', isSuccess, {
+          application: targetApp || 'ALL',
+          status: isSuccess ? (patchRes.patched.length > 0 ? 'patched' : 'already-patched') : 'failed',
+          backupCreated: patchRes.patched.length > 0,
+          validated: isSuccess,
+          details: patchRes,
+        }, isSuccess ? null : { code: 'PATCH_FAILED', message: `Failed to patch ${patchRes.failed.map(a=>a.name).join(', ') || 'applications'}` });
+        
+        console.log(JSON.stringify(res, null, 2));
+        process.exit(exitCode);
       } else if (['rollback', '--rollback', '-r'].includes(command)) {
         const targetApp = args[1] && args[1] !== '--json' ? args[1] : null;
         if (!targetApp) {
-          console.log(JSON.stringify({ success: false, version: VERSION, operation: 'rollback', error: 'Missing target application parameter' }, null, 2));
+          const res = bridge.createResponse('rollback', false, null, { code: 'INVALID_ARGUMENTS', message: 'Missing target application parameter for rollback' });
+          console.log(JSON.stringify(res, null, 2));
+          process.exit(2);
         } else {
           const apps = detector.detectAll();
           const matched = apps.find(a => a.name.toLowerCase().includes(targetApp.toLowerCase()) || a.path.toLowerCase().includes(targetApp.toLowerCase()));
           const targetPath = matched ? matched.path : targetApp;
-          const res = backup.rollback(targetPath);
-          console.log(JSON.stringify({ success: res.success, version: VERSION, operation: 'rollback', result: res }, null, 2));
+          const rbRes = backup.rollback(targetPath);
+          const res = bridge.createResponse('rollback', rbRes.success, {
+            application: matched ? matched.name : targetApp,
+            status: rbRes.success ? 'restored' : 'failed',
+            restoredState: rbRes.success,
+            backup: rbRes,
+          }, rbRes.success ? null : { code: 'ROLLBACK_FAILED', message: rbRes.error || 'Rollback operation failed' });
+          
+          console.log(JSON.stringify(res, null, 2));
+          process.exit(rbRes.success ? 0 : 1);
         }
       } else if (['health', '--health'].includes(command)) {
         const targetApp = args[1] && args[1] !== '--json' ? args[1] : null;
-        const apps = detector.detectAll();
-        const app = targetApp ? apps.find(a => a.name.toLowerCase().includes(targetApp.toLowerCase())) || { name: targetApp, path: targetApp } : apps[0];
-        const report = app ? inspector.inspectApp(app) : null;
-        console.log(JSON.stringify({ success: !!report, version: VERSION, operation: 'health', report }, null, 2));
+        const { response, exitCode } = bridge.handleHealthJson(targetApp);
+        console.log(JSON.stringify(response, null, 2));
+        process.exit(exitCode);
       } else if (['cleanup', '--cleanup', '-c'].includes(command)) {
-        const res = backup.cleanup();
-        console.log(JSON.stringify({ success: true, version: VERSION, operation: 'cleanup', result: res }, null, 2));
+        const cRes = backup.cleanup();
+        const res = bridge.createResponse('cleanup', true, { result: cRes });
+        console.log(JSON.stringify(res, null, 2));
+        process.exit(0);
       } else {
-        console.log(JSON.stringify({ success: false, version: VERSION, error: `Unsupported JSON command: ${command}` }, null, 2));
+        const res = bridge.createResponse(command, false, null, { code: 'INVALID_COMMAND', message: `Unsupported JSON operation: ${command}` });
+        console.log(JSON.stringify(res, null, 2));
+        process.exit(2);
       }
     } catch (err) {
-      console.log(JSON.stringify({ success: false, version: VERSION, error: err.message }, null, 2));
+      const res = bridge.createResponse(command, false, null, { code: 'UNHANDLED_EXCEPTION', message: err.message });
+      console.log(JSON.stringify(res, null, 2));
+      process.exit(1);
     }
     return;
   }

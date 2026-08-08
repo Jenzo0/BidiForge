@@ -172,6 +172,53 @@ node index.js vault restore <snapshot-id>
 node index.js cleanup
 ```
 
+### Machine-Readable CLI (`--json`)
+
+BidiForge exposes a standardized, machine-readable JSON contract for external integrations (e.g., C# WinForms GUI or automated runners):
+
+```bash
+# Scan detected apps in JSON format
+node index.js scan --json
+
+# Patch application in JSON format
+node index.js patch discord --json
+
+# Force re-patch in JSON format
+node index.js repair discord --json
+
+# Rollback application in JSON format
+node index.js rollback discord --json
+
+# Diagnostic health report in JSON format
+node index.js health --json
+
+# Engine status in JSON format
+node index.js status --json
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "operation": "scan",
+  "version": "4.0.0",
+  "timestamp": "2026-08-08T20:00:00.000Z",
+  "data": {
+    "apps": [
+      {
+        "name": "Discord",
+        "path": "C:\\Users\\...\\app-1.0.9251",
+        "version": "1.0.9251",
+        "runtime": "cjs",
+        "profile": "discord",
+        "status": "patched"
+      }
+    ]
+  },
+  "error": null
+}
+```
+
 ---
 
 ## 📱 Compatibility Status
