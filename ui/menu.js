@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes-Agent Inspired Full-TUI Engine (v3.6 Engine)
- * Sleek divider line layout (Zero box side walls), erased scrollback buffer, & Arrow key navigation ONLY
+ * BidiForge — Hermes Agent Card TUI Engine (v3.7 Engine)
+ * Rounded embedded-title cards (╭─ Title ───╮), erased scrollback buffer, & Arrow key navigation ONLY
  * 
- * @version 3.6.0
+ * @version 3.7.0
  * @author Jenzo0
  */
 
@@ -10,7 +10,7 @@ const readline = require('readline');
 const themeEngine = require('./theme');
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const DEFAULT_WIDTH = 76;
+const DEFAULT_CARD_WIDTH = 64;
 
 /**
  * Wipe terminal screen AND scrollback buffer completely to prevent infinite scroll artifacts
@@ -55,54 +55,84 @@ function getVisualWidth(str) {
 }
 
 /**
- * Format a single clean line with left label & right-aligned status badge (No side box walls)
- * @param {string} label - Left label text
- * @param {string} tag - Right badge text
- * @param {number} width - Row width
- * @returns {string} Formatted line
+ * Format a single line enclosed inside a Hermes rounded card container
+ * @param {string} leftText - Left text content
+ * @param {string} rightTag - Optional right-aligned status badge
+ * @param {number} width - Card width
+ * @returns {string} Formatted card line
  */
-function formatRow(label = '', tag = '', width = DEFAULT_WIDTH) {
-  const visLabel = getVisualWidth(label);
-  const visTag = getVisualWidth(tag);
+function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH) {
+  const T = themeEngine.getTheme();
+  const visLeft = getVisualWidth(leftText);
+  const visRight = getVisualWidth(rightTag);
   
-  if (tag) {
-    const padLen = Math.max(1, width - visLabel - visTag - 2);
-    return `  ${label}${' '.repeat(padLen)}${tag}`;
+  if (rightTag) {
+    const totalVis = visLeft + visRight;
+    const padLen = Math.max(1, width - 4 - totalVis);
+    return `${T.border}│${T.reset} ${leftText}${' '.repeat(padLen)}${rightTag} ${T.border}│${T.reset}`;
   } else {
-    return `  ${label}`;
+    const padLen = Math.max(0, width - 4 - visLeft);
+    return `${T.border}│${T.reset} ${leftText}${' '.repeat(padLen)} ${T.border}│${T.reset}`;
   }
 }
 
 /**
- * Print sleek horizontal divider sections (No box side walls)
+ * Print Hermes Agent Rounded Card Container with embedded title (╭─ Title ───╮)
+ * @param {Array} rows - Array of row objects { label/text, tag } or strings
+ * @param {string} title - Embedded title text
+ * @param {string} subtitle - Optional current state / subtitle line
+ * @param {number} cardWidth - Target card width
  */
-function printHeader(title = '') {
+function printHermesCard(rows = [], title = '', subtitle = '', cardWidth = DEFAULT_CARD_WIDTH) {
   const T = themeEngine.getTheme();
-  console.log(`${T.border}════════════════════════════════════════════════════════════════════════════${T.reset}`);
-  if (title) {
-    console.log(`  ${T.title}${T.bold}${title}${T.reset}`);
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
-  }
-}
+  
+  // Calculate top border length
+  const visTitle = getVisualWidth(title);
+  const topBarLen = Math.max(2, cardWidth - 5 - visTitle);
+  const topLine = `${T.border}╭─ ${T.reset}${T.title}${T.bold}${title}${T.reset} ${T.border}${'─'.repeat(topBarLen)}╮${T.reset}`;
+  const botLine = `${T.border}╰${'─'.repeat(cardWidth - 2)}╯${T.reset}`;
 
-function printFooter(tipText = '') {
-  const T = themeEngine.getTheme();
-  if (tipText) {
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
-    console.log(`  ${T.title}💡 Tip:${T.reset} ${T.dim}${tipText}${T.reset}`);
+  console.log(topLine);
+
+  if (subtitle) {
+    console.log(formatCardRow(`${T.dim}${subtitle}${T.reset}`, '', cardWidth));
+    console.log(formatCardRow('', '', cardWidth));
   }
-  console.log(`${T.border}════════════════════════════════════════════════════════════════════════════${T.reset}`);
+
+  rows.forEach(row => {
+    if (typeof row === 'object') {
+      console.log(formatCardRow(row.text || row.label || '', row.tag || '', cardWidth));
+    } else {
+      console.log(formatCardRow(row, '', cardWidth));
+    }
+  });
+
+  console.log(botLine);
 }
 
 /**
- * Interactive Arrow-Key Menu Selector with Live Search (/ key) - Zero Box Walls
+ * Print sleek bottom prompt input bar (❯ |)
+ */
+function printPromptBar(tipText = '') {
+  const T = themeEngine.getTheme();
+  console.log('');
+  if (tipText) {
+    console.log(`${T.dim}✦ Tip: ${tipText}${T.reset}`);
+  }
+  console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+  console.log(`${T.title}${T.bold}❯${T.reset} ${T.dim}|${T.reset}`);
+}
+
+/**
+ * Interactive Hermes Card Selector (↑ Up / ↓ Down / Enter / Esc / Live Search /)
+ * Enforces Arrow key cursor navigation ONLY (No numbers)
  * @param {Array} options - List of string options or objects { label, tag, value }
- * @param {string} promptText - Prompt header title
+ * @param {string} promptText - Card title
  * @param {function} headerFn - Banner callback
- * @param {string} tipText - Footer shortcut tips
+ * @param {string} subtitleText - Card subtitle state
  * @returns {Promise<number>} Selected index
  */
-function promptSelect(options, promptText = 'Select an option using ↑/↓ arrows and press Enter:', headerFn = null, tipText = 'Use ↑/↓ Arrow Keys, / to search, Enter to select, Esc to back') {
+function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn = null, subtitleText = '') {
   return new Promise(resolve => {
     let selectedIndex = 0;
     let searchQuery = '';
@@ -135,35 +165,39 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
         headerFn();
       }
 
-      printHeader(promptText);
+      const filtered = getFilteredOptions();
+      const rows = [];
 
       if (isSearchMode) {
-        console.log(`  ${T.title}/ Search Filter:${T.reset} ${T.bold}${searchQuery}_${T.reset}`);
-        console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+        rows.push({
+          label: `${T.title}/ Filter:${T.reset} ${T.bold}${searchQuery}_${T.reset}`,
+          tag: `${T.dim}(Esc clear)${T.reset}`,
+        });
+        rows.push({ label: '' });
       }
 
-      const filtered = getFilteredOptions();
       if (filtered.length === 0) {
-        console.log(`  ${T.warning}✖ No items matching "${searchQuery}"${T.reset}`);
+        rows.push({ label: `${T.warning}✖ No items matching "${searchQuery}"${T.reset}` });
       } else {
         if (selectedIndex >= filtered.length) selectedIndex = 0;
         filtered.forEach((item, idx) => {
           const rawLabel = typeof item.opt === 'string' ? item.opt : item.opt.label;
-          // Strip legacy numbers [1], [2] to guarantee 100% arrow-key only navigation
+          // Strip out legacy numbers [1], [2] to ensure 100% arrow key navigation only
           const cleanLabel = rawLabel.replace(/^⚡\s*\[\d+\]\s*/, '⚡ ').replace(/^⚙️\s*\[\d+\]\s*/, '⚙️ ').replace(/^🚀\s*\[\d+\]\s*/, '🚀 ').replace(/^🔍\s*\[\d+\]\s*/, '🔍 ').replace(/^📂\s*\[\d+\]\s*/, '📂 ').replace(/^🛡️\s*\[\d+\]\s*/, '🛡️ ').replace(/^🩺\s*\[\d+\]\s*/, '🩺 ').replace(/^🔄\s*\[\d+\]\s*/, '🔄 ').replace(/^🖱️\s*\[\d+\]\s*/, '🖱️ ').replace(/^📦\s*\[\d+\]\s*/, '📦 ').replace(/^🧹\s*\[\d+\]\s*/, '🧹 ').replace(/^🧪\s*\[\d+\]\s*/, '🧪 ').replace(/^🎨\s*\[\d+\]\s*/, '🎨 ').replace(/^❌\s*\[\d+\]\s*/, '❌ ').replace(/^\[\d+\]\s*/, '');
           const tag = (typeof item.opt === 'object' && item.opt.tag) ? item.opt.tag : '';
 
           if (idx === selectedIndex) {
-            const selLabel = `${T.bgActive} ❯ ${cleanLabel} ${T.reset}`;
-            console.log(formatRow(selLabel, tag));
+            const selLabel = `${T.title}${T.bold}❯ ${cleanLabel}${T.reset}`;
+            rows.push({ label: selLabel, tag });
           } else {
-            const dimLabel = `   ${T.dim}${cleanLabel}${T.reset}`;
-            console.log(formatRow(dimLabel, tag));
+            const dimLabel = `  ${T.text}${cleanLabel}${T.reset}`;
+            rows.push({ label: dimLabel, tag });
           }
         });
       }
 
-      printFooter(isSearchMode ? 'Type to filter, Backspace to delete, Esc to exit search' : tipText);
+      printHermesCard(rows, promptText, subtitleText || `Select option with ↑/↓ arrows and press Enter`, 66);
+      printPromptBar(isSearchMode ? 'Type query to filter, Backspace to delete, Esc to cancel' : 'Use ↑/↓ to navigate, / to filter, Enter to select, Esc to back');
     }
 
     render();
@@ -235,13 +269,13 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
 }
 
 /**
- * Multi-Selection Checkbox Selector ([ ] / [x]) with Arrow Keys, Space to toggle, Enter to confirm
+ * Multi-Selection Checkbox Selector ([ ] / [x]) inside Hermes Rounded Card Container
  * @param {Array} options - List of options { label, tag, value }
- * @param {string} promptText - Prompt header title
+ * @param {string} promptText - Card title
  * @param {function} headerFn - Banner callback
  * @returns {Promise<Array>} Selected objects
  */
-function promptMultiSelect(options, promptText = 'Select applications to patch (Space to toggle, Enter to confirm):', headerFn = null) {
+function promptMultiSelect(options, promptText = 'Select Applications to Patch', headerFn = null) {
   return new Promise(resolve => {
     let cursor = 0;
     const checkedState = options.map(() => false);
@@ -260,8 +294,7 @@ function promptMultiSelect(options, promptText = 'Select applications to patch (
       clearScreen();
       if (typeof headerFn === 'function') headerFn();
 
-      printHeader(promptText);
-
+      const rows = [];
       options.forEach((opt, idx) => {
         const rawLabel = typeof opt === 'string' ? opt : opt.label;
         const cleanLabel = rawLabel.replace(/^\[\d+\]\s*/, '');
@@ -270,15 +303,16 @@ function promptMultiSelect(options, promptText = 'Select applications to patch (
         const checkMark = isChecked ? `${T.success}[x]${T.reset}` : `${T.dim}[ ]${T.reset}`;
 
         if (idx === cursor) {
-          const lineText = `${T.bgActive} ❯ ${checkMark} ${cleanLabel} ${T.reset}`;
-          console.log(formatRow(lineText, tag));
+          const lineText = `${T.title}${T.bold}❯ ${checkMark} ${cleanLabel}${T.reset}`;
+          rows.push({ label: lineText, tag });
         } else {
-          const lineText = `   ${checkMark} ${T.dim}${cleanLabel}${T.reset}`;
-          console.log(formatRow(lineText, tag));
+          const lineText = `  ${checkMark} ${T.text}${cleanLabel}${T.reset}`;
+          rows.push({ label: lineText, tag });
         }
       });
 
-      printFooter('Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm, Esc to back');
+      printHermesCard(rows, promptText, 'Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm', 66);
+      printPromptBar('Space to toggle selection [x], Enter to execute patch on selected apps');
     }
 
     render();
@@ -376,9 +410,9 @@ module.exports = {
   promptSelect,
   promptMultiSelect,
   createSpinner,
-  formatRow,
-  printHeader,
-  printFooter,
+  printHermesCard,
+  formatCardRow,
+  printPromptBar,
   clearScreen,
   stripAnsi,
   getVisualWidth,

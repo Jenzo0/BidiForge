@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.6 Hermes-Agent TUI Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.7 Engine)
  * Universal BiDi Compatibility Layer for Electron
- * Hermes Agent Layout: Split Hero Logo/Stats, Sleek Line Dividers, Zero Box Side Walls, & Erased Scrollback Buffer
+ * Hermes Agent TUI Engine: Embedded Title Card Containers (╭─ Title ───╮), Erased Scrollback Buffer, Arrow Cursor ONLY
  * 
- * @version 3.6.0
+ * @version 3.7.0
  * @author Jenzo0
  */
 
@@ -25,9 +25,9 @@ const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
 const updater = require('./core/updater');
 const themeEngine = require('./ui/theme');
-const { promptSelect, promptMultiSelect, createSpinner, formatRow, printHeader, printFooter, clearScreen, beep } = require('./ui/menu');
+const { promptSelect, promptMultiSelect, createSpinner, printHermesCard, formatCardRow, printPromptBar, clearScreen, beep } = require('./ui/menu');
 
-const VERSION = '3.6.0';
+const VERSION = '3.7.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
@@ -36,6 +36,9 @@ const DEVELOPER = 'Jenzo0';
 function banner() {
   const T = themeEngine.getTheme();
   const appsCount = detector.detectAll().length;
+
+  console.log(`\n${T.dim}Welcome to BidiForge! Use Arrow Keys to navigate or / to filter.${T.reset}`);
+  console.log(`${T.title}✦ Tip: Universal BiDi compatibility engine for all Electron applications.${T.reset}\n`);
 
   console.log(`${T.title}${T.bold}  ██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${T.reset}`);
   console.log(`${T.title}${T.bold}  ██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${T.reset}`);
@@ -298,18 +301,19 @@ async function patch(target = null, relaunch = true, force = false) {
     }
   }
   
-  printHeader('SUMMARY REPORT');
-  console.log(formatRow(`${T.success}✓ Patched Applications:${T.reset}`, `${T.bold}${results.patched.length}${T.reset}`));
-  console.log(formatRow(`${T.warning}• Skipped (Patched):${T.reset}`, `${T.bold}${results.skipped.length}${T.reset}`));
-  console.log(formatRow(`${T.danger}✖ Failed Applications:${T.reset}`, `${T.bold}${results.failed.length}${T.reset}`));
-  printFooter('All patched applications are now active with Arabic BiDi support');
+  const summaryRows = [
+    { label: `${T.success}✓ Patched Applications:${T.reset}`, tag: `${T.bold}${results.patched.length}${T.reset}` },
+    { label: `${T.warning}• Skipped (Patched):${T.reset}`, tag: `${T.bold}${results.skipped.length}${T.reset}` },
+    { label: `${T.danger}✖ Failed Applications:${T.reset}`, tag: `${T.bold}${results.failed.length}${T.reset}` },
+  ];
+  printHermesCard(summaryRows, '⚙️ Patch Summary Report', 'All patched applications active with Arabic BiDi', 66);
   console.log('');
   
   return results;
 }
 
 /**
- * Scan installed applications and display clean divider table with status badges (No box side walls)
+ * Scan installed applications and display Hermes Card Table
  */
 function scan() {
   logger.init();
@@ -324,8 +328,7 @@ function scan() {
     return apps;
   }
   
-  printHeader('DISCOVERED ELECTRON APPLICATIONS & STATUS');
-  
+  const rows = [];
   apps.forEach((app) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
@@ -341,10 +344,11 @@ function scan() {
     }
     
     const label = `${T.text}${T.bold}${app.name}${T.reset} (v${app.version})`;
-    console.log(formatRow(label, statusTag));
+    rows.push({ label, tag: statusTag });
   });
   
-  printFooter('Select Option in main menu to interactively patch applications');
+  printHermesCard(rows, '⚙️ Discovered Applications & Compatibility Status', `Current: ${apps.length} Electron Applications Discovered`, 66);
+  printPromptBar('Use Arrow Keys to select application to patch');
   console.log('');
   return apps;
 }
@@ -400,17 +404,17 @@ function runHealthInspection(target = null) {
     const report = inspector.inspectApp(app);
     const scoreColor = report.score >= 80 ? T.success : (report.score >= 50 ? T.warning : T.danger);
 
-    printHeader(`HEALTH REPORT: ${report.appName} (v${report.appVersion})`);
-    console.log(`  Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}  —  Status: ${scoreColor}${report.status}${T.reset}`);
-    console.log(`  Inspected At: ${new Date(report.inspectedAt).toLocaleString()}`);
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+    const rows = [
+      { label: `Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}`, tag: `Status: ${scoreColor}${report.status}${T.reset}` },
+      { label: `Inspected At: ${new Date(report.inspectedAt).toLocaleString()}` },
+    ];
 
     report.checks.forEach(check => {
       const symbol = check.passed ? `${T.success}✓${T.reset}` : `${T.danger}✖${T.reset}`;
-      console.log(`  ${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}`);
+      rows.push({ label: `${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}` });
     });
 
-    printFooter('High score indicates optimal Arabic RTL injection');
+    printHermesCard(rows, `🩺 BiDi Health Report: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection', 66);
     console.log('');
   }
 }
@@ -439,7 +443,7 @@ async function handleAppSelection(rl, app) {
       '• Skip Patching For Now',
       '* Cancel / Back to Main Menu',
     ];
-    const idx = await promptSelect(choices, `Select action for ${app.name}:`, banner);
+    const idx = await promptSelect(choices, `⚙️ Update Action: ${app.name}`, banner);
     if (idx === 0) {
       await patch(app, true, true);
     }
@@ -459,7 +463,7 @@ async function handleAppSelection(rl, app) {
       '🛡️ Rollback / Remove Patch (Restore original app backup)',
       '* Cancel / Back to Main Menu',
     ];
-    const subChoice = await promptSelect(choices, `Select action for ${app.name}:`, banner);
+    const subChoice = await promptSelect(choices, `⚙️ Patched App Options: ${app.name}`, banner);
     if (subChoice === 0) {
       await patch(app, true, true);
     } else if (subChoice === 1) {
@@ -478,7 +482,7 @@ async function handleAppSelection(rl, app) {
     `🚀 Yes, apply BiDi patch to ${app.name}`,
     `* Cancel & Back to Main Menu`,
   ];
-  const confirmIdx = await promptSelect(choices, `Confirm patching ${app.name} (v${app.version}):`, banner);
+  const confirmIdx = await promptSelect(choices, `⚙️ Confirm Patch: ${app.name}`, banner);
   if (confirmIdx === 0) {
     await patch(app, true, false);
   }
@@ -579,7 +583,7 @@ async function handleThemeSelection() {
   }));
   choices.push({ label: '* Back to Main Menu', tag: '' });
 
-  const idx = await promptSelect(choices, 'BidiForge Full-TUI Color Theme Switcher:', banner);
+  const idx = await promptSelect(choices, '🎨 Theme Switcher — Select Color Palette', banner);
   if (idx >= 0 && idx < themes.length) {
     themeEngine.setTheme(themes[idx].key);
     console.log(`\n  ${themeEngine.getTheme().success}✓ Theme changed to ${themes[idx].name}!${themeEngine.getTheme().reset}\n`);
@@ -617,7 +621,7 @@ async function interactiveMenu() {
 
   let running = true;
   while (running) {
-    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.6 Main Menu — Hermes-Agent TUI Engine:', banner);
+    const selectedIdx = await promptSelect(menuOptions, '⚙️ BidiForge Main Menu — Select Option', banner, 'Current: 6 Electron Applications Discovered');
     
     if (selectedIdx === -1 || selectedIdx === 13) {
       running = false;
@@ -637,7 +641,7 @@ async function interactiveMenu() {
         const apps = detector.detectAll();
         if (apps.length > 0) {
           const appChoices = getAppSelectOptions(apps);
-          const selectedApps = await promptMultiSelect(appChoices, 'Select Applications to Patch (Space to toggle [x], Enter to confirm):', banner);
+          const selectedApps = await promptMultiSelect(appChoices, '⚙️ Select Applications to Patch', banner);
           if (selectedApps.length > 0) {
             await patch(selectedApps, true, false);
           }
@@ -694,7 +698,7 @@ async function interactiveMenu() {
         const apps = scan();
         if (apps.length > 0) {
           const appChoices = getAppSelectOptions(apps);
-          const appIdx = await promptSelect(appChoices, 'Select Application for Live Hot-Reload Watcher:', banner);
+          const appIdx = await promptSelect(appChoices, '⚙️ Select Application for Live Hot-Reload Watcher', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
             watcher.watch(apps[appIdx]);
             return;
@@ -718,12 +722,12 @@ async function interactiveMenu() {
       case 9: { // Vault Manager
         banner();
         const snapshots = vault.listSnapshots();
-        printHeader(`VAULT SNAPSHOT REGISTRY (${snapshots.length} snapshots)`);
-        snapshots.forEach((s) => {
-          const label = `${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`;
-          console.log(formatRow(label, `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`));
-        });
-        printFooter('Use "node index.js vault restore <id>" to restore any snapshot');
+        const rows = snapshots.map((s) => ({
+          label: `${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`,
+          tag: `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`,
+        }));
+        printHermesCard(rows, `📦 Vault Snapshot Registry (${snapshots.length} snapshots)`, 'Use "node index.js vault restore <id>" to restore any snapshot', 66);
+        printPromptBar('Use vault restore command to roll back to any historical snapshot');
         break;
       }
 
