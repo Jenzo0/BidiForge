@@ -1,8 +1,8 @@
 /**
- * BidiForge — Windows Shell Integration (v3.1 Engine)
- * Adds/removes "Patch Arabic BiDi with BidiForge" in Windows Explorer context menu
+ * BidiForge — Windows Shell Integration (v3.2 Engine)
+ * Complete Windows Explorer Context Menu integration for Folders, Whitespace, & EXE files
  * 
- * @version 3.1.0
+ * @version 3.2.0
  * @author Jenzo0
  */
 
@@ -11,7 +11,7 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Register BidiForge in Windows Explorer Context Menu
+ * Register BidiForge in all Windows Explorer Context Menu locations
  * @returns {object} Result object
  */
 function register() {
@@ -26,18 +26,24 @@ function register() {
     }
 
     const command = `"${batPath}" patch "%1"`;
-    const regKeyDir = 'HKCU\\Software\\Classes\\Directory\\shell\\BidiForge';
-    const regKeyFile = 'HKCU\\Software\\Classes\\*\\shell\\BidiForge';
+    const bgCommand = `"${batPath}" patch "%V"`;
+    
+    const targets = [
+      { key: 'HKCU\\Software\\Classes\\Directory\\Background\\shell\\BidiForge', cmd: bgCommand, title: 'Patch Arabic BiDi with BidiForge ⚡' },
+      { key: 'HKCU\\Software\\Classes\\Directory\\shell\\BidiForge', cmd: command, title: 'Patch Arabic BiDi with BidiForge ⚡' },
+      { key: 'HKCU\\Software\\Classes\\exefile\\shell\\BidiForge', cmd: command, title: 'Patch Arabic BiDi with BidiForge ⚡' },
+      { key: 'HKCU\\Software\\Classes\\*\\shell\\BidiForge', cmd: command, title: 'Patch Arabic BiDi with BidiForge ⚡' },
+    ];
 
-    execSync(`reg add "${regKeyDir}" /ve /d "Patch Arabic BiDi with BidiForge" /f`, { stdio: 'pipe' });
-    execSync(`reg add "${regKeyDir}\\command" /ve /d "${command}" /f`, { stdio: 'pipe' });
-
-    execSync(`reg add "${regKeyFile}" /ve /d "Patch Arabic BiDi with BidiForge" /f`, { stdio: 'pipe' });
-    execSync(`reg add "${regKeyFile}\\command" /ve /d "${command}" /f`, { stdio: 'pipe' });
+    for (const target of targets) {
+      execSync(`reg add "${target.key}" /ve /d "${target.title}" /f`, { stdio: 'pipe' });
+      execSync(`reg add "${target.key}" /v "Position" /d "Top" /f`, { stdio: 'pipe' });
+      execSync(`reg add "${target.key}\\command" /ve /d "${target.cmd}" /f`, { stdio: 'pipe' });
+    }
 
     return {
       success: true,
-      message: 'Successfully registered "Patch Arabic BiDi with BidiForge" in Windows Explorer context menu!',
+      message: 'Successfully registered "Patch Arabic BiDi with BidiForge ⚡" in Windows Explorer context menu! (Appears on Right-Click or Show More Options in Windows 11)',
     };
   } catch (e) {
     return { success: false, error: e.message };
@@ -54,11 +60,16 @@ function unregister() {
       return { success: false, error: 'Windows Explorer integration is only supported on Windows OS' };
     }
 
-    const regKeyDir = 'HKCU\\Software\\Classes\\Directory\\shell\\BidiForge';
-    const regKeyFile = 'HKCU\\Software\\Classes\\*\\shell\\BidiForge';
+    const keys = [
+      'HKCU\\Software\\Classes\\Directory\\Background\\shell\\BidiForge',
+      'HKCU\\Software\\Classes\\Directory\\shell\\BidiForge',
+      'HKCU\\Software\\Classes\\exefile\\shell\\BidiForge',
+      'HKCU\\Software\\Classes\\*\\shell\\BidiForge',
+    ];
 
-    try { execSync(`reg delete "${regKeyDir}" /f`, { stdio: 'pipe' }); } catch (_) {}
-    try { execSync(`reg delete "${regKeyFile}" /f`, { stdio: 'pipe' }); } catch (_) {}
+    for (const key of keys) {
+      try { execSync(`reg delete "${key}" /f`, { stdio: 'pipe' }); } catch (_) {}
+    }
 
     return {
       success: true,

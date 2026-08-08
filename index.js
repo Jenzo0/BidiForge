@@ -1,8 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.1 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.2 Engine)
  * Universal BiDi Compatibility Layer for Electron
+ * Supports Arrow Key Keyboard Navigation (↑/↓), Animated Spinners, & Windows Context Menu
  * 
- * @version 3.1.0
+ * @version 3.2.0
  * @author Jenzo0
  */
 
@@ -22,23 +23,10 @@ const inspector = require('./core/inspector');
 const watcher = require('./core/watcher');
 const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
+const { promptSelect, createSpinner, beep, C } = require('./ui/menu');
 
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 const DEVELOPER = 'Jenzo0';
-
-// ANSI terminal color codes
-const C = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  cyan: '\x1b[36;1m',
-  green: '\x1b[32;1m',
-  yellow: '\x1b[33;1m',
-  red: '\x1b[31;1m',
-  magenta: '\x1b[35;1m',
-  white: '\x1b[37;1m',
-  blue: '\x1b[34;1m',
-};
 
 /**
  * Print stylized Cyberpunk ASCII banner with 100% pixel-perfect symmetry
@@ -156,16 +144,19 @@ function relaunchAppProcess(appInfo) {
       const child = spawn(exePath, [], { detached: true, stdio: 'ignore' });
       child.unref();
       console.log(`  ${C.green}✓ Patch Done & ${appInfo.name} Relaunched!${C.reset}\n`);
+      beep();
     } else {
       console.log(`  ${C.green}✓ Patch Done!${C.reset}\n`);
+      beep();
     }
   } catch (_) {
     console.log(`  ${C.green}✓ Patch Done!${C.reset}\n`);
+    beep();
   }
 }
 
 /**
- * Main patch workflow with Safe Update Detection & Auto Repair
+ * Main patch workflow with Animated Spinners & Safe Update Detection
  */
 async function patch(target = null, relaunch = true, force = false) {
   logger.init();
@@ -214,40 +205,43 @@ async function patch(target = null, relaunch = true, force = false) {
     killAppProcess(appInfo);
     
     let tempDir = null;
+    const spinner = createSpinner('Extracting ASAR workspace...');
     try {
-      console.log(`  ${C.dim}• [1/6] Extracting ASAR workspace...${C.reset}`);
+      spinner.update('[1/6] Extracting ASAR package...');
       const ext = await asar.extract(asarPath);
       if (!ext.success) throw new Error(`Extract failed: ${ext.error}`);
       tempDir = ext.tempPath;
       
-      console.log(`  ${C.dim}• [2/6] Analyzing application structure...${C.reset}`);
+      spinner.update('[2/6] Analyzing application structure...');
       const classification = classifier.classify(tempDir);
       if (classification.confidence < 50) {
         throw new Error('Low structure confidence - incompatible app layout');
       }
       
-      console.log(`  ${C.dim}• [3/6] Creating SHA-256 backup vault snapshot...${C.reset}`);
+      spinner.update('[3/6] Creating SHA-256 backup vault snapshot...');
       const bak = backup.create(asarPath, appInfo);
       if (!bak.success) throw new Error(`Backup failed: ${bak.error}`);
       vault.createSnapshot(asarPath, appInfo);
       
-      console.log(`  ${C.dim}• [4/6] Injecting BiDi engine (Developer: Jenzo0)...${C.reset}`);
+      spinner.update('[4/6] Injecting BiDi engine (Developer: Jenzo0)...');
       const inj = injector.inject(tempDir, appInfo);
       if (!inj.success) throw new Error(`Inject failed: ${inj.error}`);
       
-      console.log(`  ${C.dim}• [5/6] Repacking ASAR package atomically...${C.reset}`);
+      spinner.update('[5/6] Repacking ASAR package atomically...');
       const packRes = await asar.pack(tempDir, asarPath);
       if (!packRes.success) {
         backup.rollback(appInfo.path);
         throw new Error(`Repack failed: ${packRes.error}`);
       }
       
-      console.log(`  ${C.dim}• [6/6] Verifying patched ASAR integrity...${C.reset}`);
+      spinner.update('[6/6] Verifying patched ASAR integrity...');
       const val = asar.validate(asarPath);
       if (!val.valid) {
         backup.rollback(appInfo.path);
         throw new Error(`Validation failed: ${val.error}`);
       }
+      
+      spinner.succeed(`Successfully injected BiDi engine into ${appInfo.name}!`);
       
       const newHash = detector.getFileHash(asarPath);
       status.setPatched(appInfo.path, appInfo, {
@@ -263,7 +257,8 @@ async function patch(target = null, relaunch = true, force = false) {
         console.log(`  ${C.green}✓ Successfully patched ${appInfo.name}!${C.reset}\n`);
       }
     } catch (e) {
-      console.log(`  ${C.red}✖ Failed to patch ${appInfo.name}: ${e.message}${C.reset}\n`);
+      spinner.fail(`Failed to patch ${appInfo.name}: ${e.message}`);
+      console.log('');
       results.failed.push(appInfo);
     } finally {
       if (tempDir) asar.cleanup(tempDir);
@@ -323,7 +318,6 @@ function scan() {
 
 /**
  * Run BiDi Diagnostic Health Inspector on target application(s)
- * @param {string|object} target - Target application or query
  */
 function runHealthInspection(target = null) {
   banner();
@@ -375,12 +369,14 @@ async function handleAppSelection(rl, app) {
       console.log(`  ${C.dim}Previous Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
     }
     console.log('');
-    console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Run Auto-Repair & Re-patch Updated Version (Recommended)${C.reset}`);
-    console.log(`  ${C.yellow}[2]${C.reset} ${C.dim}Skip Patching For Now${C.reset}`);
-    console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Back to Main Menu${C.reset}\n`);
-
-    const ans = (await askQuestion(rl, `${C.yellow}Select an action [1-2, *]: ${C.reset}`)).trim();
-    if (ans === '1') {
+    
+    const choices = [
+      '⚡ Run Auto-Repair & Re-patch Updated Version (Recommended)',
+      '• Skip Patching For Now',
+      '* Cancel / Back to Main Menu',
+    ];
+    const idx = await promptSelect(choices, `Select action for ${app.name}:`);
+    if (idx === 0) {
       await patch(app, true, true);
     }
     return;
@@ -393,14 +389,16 @@ async function handleAppSelection(rl, app) {
       console.log(`  ${C.dim}Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
     }
     console.log('');
-    console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Force Re-patch (Apply fresh BiDi patch)${C.reset}`);
-    console.log(`  ${C.red}[2]${C.reset} ${C.red}Rollback / Remove Patch (Restore original app backup)${C.reset}`);
-    console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Cancel / Back to Main Menu${C.reset}\n`);
-
-    const subChoice = (await askQuestion(rl, `${C.yellow}Select an action [1-2, *]: ${C.reset}`)).trim();
-    if (subChoice === '1') {
+    
+    const choices = [
+      '⚡ Force Re-patch (Apply fresh BiDi patch)',
+      '🛡️ Rollback / Remove Patch (Restore original app backup)',
+      '* Cancel / Back to Main Menu',
+    ];
+    const subChoice = await promptSelect(choices, `Select action for ${app.name}:`);
+    if (subChoice === 0) {
       await patch(app, true, true);
-    } else if (subChoice === '2') {
+    } else if (subChoice === 1) {
       rollbackApp(app.name);
     }
     return;
@@ -412,8 +410,12 @@ async function handleAppSelection(rl, app) {
     console.log(`  ${C.dim}BidiForge will automatically terminate ${app.name}, apply the BiDi patch, and relaunch it.${C.reset}\n`);
   }
 
-  const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${app.name} (v${app.version})? [Y/n]: ${C.reset}`)).trim();
-  if (confirmSingle.toLowerCase() !== 'n') {
+  const choices = [
+    `🚀 Yes, apply BiDi patch to ${app.name}`,
+    `* Cancel & Back to Main Menu`,
+  ];
+  const confirmIdx = await promptSelect(choices, `Confirm patching ${app.name} (v${app.version}):`);
+  if (confirmIdx === 0) {
     await patch(app, true, false);
   }
 }
@@ -463,6 +465,7 @@ function rollbackApp(targetApp) {
   if (res.success) {
     status.update(targetPath, { status: 'RESTORED' });
     console.log(`${C.green}✓ Successfully restored original backup for ${targetApp}!${C.reset}`);
+    beep();
   } else {
     console.log(`${C.red}[X] Rollback failed: ${res.error}${C.reset}`);
   }
@@ -478,6 +481,7 @@ function cleanup() {
   console.log(`${C.cyan}• Cleaning up temporary workspaces & old backups...${C.reset}`);
   const res = backup.cleanup();
   console.log(`${C.green}✓ Cleaned obsolete backups (Kept: ${res.kept}).${C.reset}`);
+  beep();
 }
 
 /**
@@ -501,165 +505,161 @@ function askQuestion(rl, query) {
 }
 
 /**
- * Interactive Menu Workflow
+ * Interactive Menu Workflow with Arrow Key Keyboard Navigation (↑/↓/Enter)
  */
 async function interactiveMenu() {
   banner();
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+
+  const menuOptions = [
+    '⚡ [1] Fast Scan & List Compatible Applications',
+    '⚙️ [2] Select Application to Patch (Interactive)',
+    '🚀 [3] Patch ALL Discovered Applications',
+    '🔍 [4] Search Application by Name',
+    '📂 [5] Patch Custom Application Path (Enter Path)',
+    '🛡️ [6] Rollback Application (Restore Original Backup)',
+    '🩺 [7] Run BiDi Diagnostic Health Inspector (--health)',
+    '🔄 [8] Live Hot-Reload Watcher Engine (--watch)',
+    '🖱️ [9] Register Windows Explorer Context Menu (Right-Click Patch)',
+    '📦 [10] Snapshot Restore Vault Manager (Multi-Version Rollback)',
+    '🧹 [11] Clean Temporary Files & Prune Old Backups',
+    '🧪 [12] Run Diagnostic Test Suite',
+    '❌ [0] Exit BidiForge',
+  ];
 
   let running = true;
   while (running) {
-    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
-    console.log(`                         ${C.bold}MAIN MENU${C.reset}                            `);
-    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
-    console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Fast Scan & List Compatible Applications${C.reset}`);
-    console.log(`  ${C.cyan}[2]${C.reset} ${C.white}Select Application to Patch (Interactive)${C.reset}`);
-    console.log(`  ${C.cyan}[3]${C.reset} ${C.white}Patch ALL Discovered Applications${C.reset}`);
-    console.log(`  ${C.cyan}[4]${C.reset} ${C.white}Search Application by Name${C.reset}`);
-    console.log(`  ${C.cyan}[5]${C.reset} ${C.white}Patch Custom Application Path (Enter Path)${C.reset}`);
-    console.log(`  ${C.cyan}[6]${C.reset} ${C.white}Rollback Application (Restore Original Backup)${C.reset}`);
-    console.log(`  ${C.cyan}[7]${C.reset} ${C.white}Clean Temporary Files & Prune Old Backups${C.reset}`);
-    console.log(`  ${C.cyan}[8]${C.reset} ${C.white}Run Diagnostic Test Suite${C.reset}`);
-    console.log(`  ${C.cyan}[9]${C.reset} ${C.white}Run BiDi Diagnostic Health Inspector (--health)${C.reset}`);
-    console.log(`  ${C.cyan}[10]${C.reset} ${C.white}Register Windows Explorer Context Menu (Right-Click Patch)${C.reset}`);
-    console.log(`  ${C.cyan}[11]${C.reset} ${C.white}Snapshot Restore Vault Manager (Multi-Version Rollback)${C.reset}`);
-    console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Back to Main Menu${C.reset}`);
-    console.log(`  ${C.red}[0]${C.reset} ${C.dim}Exit BidiForge${C.reset}`);
-    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
+    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.2 Main Menu — Navigate with ↑/↓ and press Enter:');
     
-    const choice = (await askQuestion(rl, `${C.yellow}Select an option [0-11, *]: ${C.reset}`)).trim();
-    console.log('');
-    
-    if (choice === '0') {
+    if (selectedIdx === -1 || selectedIdx === 12) {
       running = false;
-      console.log(`${C.cyan}Thank you for using BidiForge!${C.reset}`);
+      console.log(`\n${C.cyan}Thank you for using BidiForge!${C.reset}`);
       break;
     }
     
-    if (choice === '*') {
-      console.clear();
-      banner();
-      continue;
-    }
-    
-    switch (choice) {
-      case '1': {
+    switch (selectedIdx) {
+      case 0: { // Scan
         const apps = scan();
         if (apps.length > 0) {
-          console.log(`  ${C.yellow}[A]${C.reset} Patch ALL Discovered Applications`);
-          console.log(`  ${C.yellow}[*]${C.reset} Back to Main Menu`);
-          console.log(`  ${C.red}[0]${C.reset} Exit BidiForge\n`);
-          
-          const ans = (await askQuestion(rl, `${C.yellow}Select App Number [1-${apps.length}], A for ALL (* Back, 0 Exit): ${C.reset}`)).trim();
-          if (ans === '0') { running = false; break; }
-          if (ans === '*') break;
-          
-          if (ans.toUpperCase() === 'A') {
-            const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL ${apps.length} applications? [Y/n]: ${C.reset}`)).trim();
-            if (confirmAll.toLowerCase() !== 'n') {
-              await patch(null, true, false);
-            }
-          } else if (ans) {
-            const num = parseInt(ans, 10);
-            let targetApp = (num > 0 && num <= apps.length) ? apps[num - 1] : apps.find(a => a.name.toLowerCase().includes(ans.toLowerCase()));
-            if (targetApp) await handleAppSelection(rl, targetApp);
+          const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
+          appChoices.push('🚀 Patch ALL Discovered Applications');
+          appChoices.push('* Back to Main Menu');
+
+          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:');
+          if (appIdx >= 0 && appIdx < apps.length) {
+            const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+            await handleAppSelection(rl, apps[appIdx]);
+            rl.close();
+          } else if (appIdx === apps.length) {
+            await patch(null, true, false);
           }
         }
         break;
       }
         
-      case '2': {
+      case 1: { // Select App
         const apps = scan();
         if (apps.length > 0) {
-          const ans = (await askQuestion(rl, `${C.yellow}Enter App Number [1-${apps.length}] (* Back, 0 Exit): ${C.reset}`)).trim();
-          if (ans === '0') { running = false; break; }
-          if (ans === '*') break;
-          const num = parseInt(ans, 10);
-          if (num > 0 && num <= apps.length) await handleAppSelection(rl, apps[num - 1]);
+          const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
+          appChoices.push('* Back to Main Menu');
+          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:');
+          if (appIdx >= 0 && appIdx < apps.length) {
+            const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+            await handleAppSelection(rl, apps[appIdx]);
+            rl.close();
+          }
         }
         break;
       }
       
-      case '3': {
-        const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL discovered applications? [Y/n]: ${C.reset}`)).trim();
-        if (confirmAll.toLowerCase() !== 'n') await patch(null, true, false);
+      case 2: { // Patch ALL
+        await patch(null, true, false);
         break;
       }
         
-      case '4': {
-        const nameQuery = (await askQuestion(rl, `${C.yellow}Enter application name to search (e.g. discord, slack, obsidian) (* Back, 0 Exit): ${C.reset}`)).trim();
-        if (nameQuery === '0') { running = false; break; }
-        if (nameQuery === '*') break;
+      case 3: { // Search
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const nameQuery = (await askQuestion(rl, `\n${C.yellow}Enter application name to search (e.g. discord, slack, obsidian): ${C.reset}`)).trim();
         if (nameQuery) {
           const apps = detector.detectAll().filter(a => a.name.toLowerCase().includes(nameQuery.toLowerCase()));
-          if (apps.length > 0) await handleAppSelection(rl, apps[0]);
+          if (apps.length > 0) {
+            await handleAppSelection(rl, apps[0]);
+          } else {
+            console.log(`${C.red}[X] No matching applications found for "${nameQuery}".${C.reset}`);
+          }
         }
+        rl.close();
         break;
       }
       
-      case '5': {
-        const customPath = (await askQuestion(rl, `${C.yellow}Enter direct application folder or ASAR file path (* Back, 0 Exit): ${C.reset}`)).trim();
-        if (customPath === '0') { running = false; break; }
-        if (customPath === '*') break;
+      case 4: { // Custom Path
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const customPath = (await askQuestion(rl, `\n${C.yellow}Enter direct application folder or ASAR file path: ${C.reset}`)).trim();
         if (customPath) await patchCustomPath(customPath);
+        rl.close();
         break;
       }
       
-      case '6': {
-        const appName = (await askQuestion(rl, `${C.yellow}Enter application name or path to rollback (* Back, 0 Exit): ${C.reset}`)).trim();
-        if (appName === '0') { running = false; break; }
-        if (appName === '*') break;
+      case 5: { // Rollback
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const appName = (await askQuestion(rl, `\n${C.yellow}Enter application name or path to rollback: ${C.reset}`)).trim();
         if (appName) rollbackApp(appName);
+        rl.close();
         break;
       }
       
-      case '7':
-        cleanup();
-        break;
-        
-      case '8':
-        runTests();
-        break;
-        
-      case '9':
+      case 6: // Health
         runHealthInspection();
         break;
-        
-      case '10': {
-        const regRes = shell.register();
-        if (regRes.success) {
-          console.log(`${C.green}✓ ${regRes.message}${C.reset}`);
-        } else {
-          console.log(`${C.red}✖ Registration failed: ${regRes.error}${C.reset}`);
+
+      case 7: { // Watch
+        const apps = scan();
+        if (apps.length > 0) {
+          const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
+          const appIdx = await promptSelect(appChoices, 'Select Application for Live Hot-Reload Watcher:');
+          if (appIdx >= 0 && appIdx < apps.length) {
+            watcher.watch(apps[appIdx]);
+            return;
+          }
         }
         break;
       }
 
-      case '11': {
+      case 8: { // Shell Integration
+        const regRes = shell.register();
+        if (regRes.success) {
+          console.log(`\n${C.green}✓ ${regRes.message}${C.reset}`);
+          beep();
+        } else {
+          console.log(`\n${C.red}✖ Registration failed: ${regRes.error}${C.reset}`);
+        }
+        break;
+      }
+
+      case 9: { // Vault Manager
         const snapshots = vault.listSnapshots();
-        console.log(`${C.cyan}• Vault Snapshot Registry (${snapshots.length} snapshots)${C.reset}\n`);
+        console.log(`\n${C.cyan}• Vault Snapshot Registry (${snapshots.length} snapshots)${C.reset}\n`);
         snapshots.forEach((s, idx) => {
           console.log(`  ${C.cyan}[${idx+1}]${C.reset} ${C.white}${C.bold}${s.appName}${C.reset} (v${s.appVersion})  —  ID: ${C.yellow}${s.id}${C.reset}`);
           console.log(`      ${C.dim}Date: ${new Date(s.createdAt).toLocaleString()} | SHA-256: ${s.hash.slice(0, 16)}...${C.reset}`);
         });
         break;
       }
-        
-      default:
-        console.log(`${C.red}Invalid selection. Please enter a choice between 0 and 11, or *.${C.reset}`);
+
+      case 10: // Cleanup
+        cleanup();
+        break;
+
+      case 11: // Tests
+        runTests();
+        break;
     }
     
-    if (running && choice !== '0') {
+    if (running) {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       await askQuestion(rl, `\n${C.dim}Press Enter to return to main menu...${C.reset}`);
-      console.clear();
-      banner();
+      rl.close();
     }
   }
-  
-  rl.close();
 }
 
 /**
@@ -718,6 +718,7 @@ async function interactiveMenu() {
           const res = vault.restoreSnapshot(args[2]);
           if (res.success) {
             console.log(`${C.green}✓ Restored snapshot ${res.snapshot.id} for ${res.snapshot.appName}!${C.reset}`);
+            beep();
           } else {
             console.log(`${C.red}✖ Vault restoration failed: ${res.error}${C.reset}`);
           }
