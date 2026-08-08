@@ -3,7 +3,7 @@
  * Universal BiDi Compatibility Layer for Electron
  * 
  * @version 3.0.0
- * @author Jenzo0 <jenzo.info@gmail.com>
+ * @author Jenzo0
  */
 
 const fs = require('fs');
@@ -21,7 +21,6 @@ const logger = require('./core/logger');
 
 const VERSION = '3.0.0';
 const DEVELOPER = 'Jenzo0';
-const EMAIL = 'jenzo.info@gmail.com';
 
 /**
  * Print single professional banner
@@ -31,7 +30,7 @@ function banner() {
   console.log('╔══════════════════════════════════════════════════════════════╗');
   console.log('║                   B I D I F O R G E                          ║');
   console.log('║        Universal BiDi Compatibility Layer v' + VERSION + '             ║');
-  console.log('║           Developer: ' + DEVELOPER + ' (' + EMAIL + ')          ║');
+  console.log('║                   Developer: ' + DEVELOPER + '                       ║');
   console.log('╚══════════════════════════════════════════════════════════════╝');
   console.log('');
 }

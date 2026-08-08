@@ -29,7 +29,6 @@
 
 ### 👤 Author & Credits
 - **Developed:** Jenzo0
-- **Email:** jenzo.info@gmail.com
 - **Version:** v3.0.0 (Universal Architecture)
 - **License:** Open Source under the MIT License
 
@@ -160,7 +159,6 @@ Licensed under the **[MIT License](LICENSE)**.
 
 ### 👤 المبرمج والمعلومات
 - **Developed:** Jenzo0
-- **البريد الإلكتروني:** jenzo.info@gmail.com
 - **الوصف:** Universal BiDi Compatibility Layer for Electron
 - **الإصدار الحالي:** v3.0.0 (Universal Architecture)
 - **الترخيص:** مفتوح المصدر تحت رخصة MIT
