@@ -1,8 +1,8 @@
 /**
- * BidiForge — Interactive CLI UI Engine (v3.4 Engine - Clean Divider Layout)
- * Sleek divider line layout, search-as-you-type (/ filter), multi-select checkboxes, & theme engine
+ * BidiForge — Advanced Full-TUI UI Engine (v3.5 Engine)
+ * Full Terminal Width Cyberpunk Boxes, Erased Scrollback Buffer, Arrow Key Cursor Navigation ONLY (No numbers)
  * 
- * @version 3.4.0
+ * @version 3.5.0
  * @author Jenzo0
  */
 
@@ -10,7 +10,17 @@ const readline = require('readline');
 const themeEngine = require('./theme');
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const DEFAULT_WIDTH = 76;
+
+/**
+ * Wipe terminal screen AND scrollback buffer completely to prevent infinite scroll artifacts
+ */
+function clearScreen() {
+  if (process.stdout.isTTY) {
+    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
+  } else {
+    console.clear();
+  }
+}
 
 /**
  * Strip ANSI escape codes from string
@@ -44,51 +54,82 @@ function getVisualWidth(str) {
 }
 
 /**
- * Format a single clean line with left label & right-aligned status badge
- * @param {string} label - Left label text
- * @param {string} tag - Right badge text
- * @param {number} width - Row width
- * @returns {string} Formatted line
+ * Get current terminal width
  */
-function formatRow(label = '', tag = '', width = DEFAULT_WIDTH) {
-  const visLabel = getVisualWidth(label);
-  const visTag = getVisualWidth(tag);
+function getTerminalWidth() {
+  return Math.max(76, (process.stdout && process.stdout.columns) ? process.stdout.columns : 80);
+}
+
+/**
+ * Format a single line enclosed inside a full-width Cyberpunk Box
+ * @param {string} leftText - Left text content
+ * @param {string} rightTag - Optional right-aligned status badge
+ * @param {number} boxWidth - Target box width
+ * @returns {string} Formatted box line
+ */
+function formatBoxRow(leftText = '', rightTag = '', boxWidth = getTerminalWidth()) {
+  const T = themeEngine.getTheme();
+  const visLeft = getVisualWidth(leftText);
+  const visRight = getVisualWidth(rightTag);
   
-  if (tag) {
-    const padLen = Math.max(1, width - visLabel - visTag);
-    return `  ${label}${' '.repeat(padLen)}${tag}`;
+  if (rightTag) {
+    const totalVis = visLeft + visRight;
+    const padLen = Math.max(1, boxWidth - 4 - totalVis);
+    return `${T.border}║${T.reset} ${leftText}${' '.repeat(padLen)}${rightTag} ${T.border}║${T.reset}`;
   } else {
-    return `  ${label}`;
+    const padLen = Math.max(0, boxWidth - 4 - visLeft);
+    return `${T.border}║${T.reset} ${leftText}${' '.repeat(padLen)} ${T.border}║${T.reset}`;
   }
 }
 
 /**
- * Print sleek horizontal divider sections
+ * Print a full terminal width Cyberpunk Box with centered title and optional footer tip
+ * @param {Array} rows - Array of row objects { label/text, tag } or strings
+ * @param {string} title - Title header text
+ * @param {string} tipText - Footer tip text
  */
-function printHeader(title = '') {
+function printBoxContainer(rows = [], title = '', tipText = '') {
   const T = themeEngine.getTheme();
-  console.log(`${T.border}════════════════════════════════════════════════════════════════════════════${T.reset}`);
-  if (title) {
-    console.log(`  ${T.title}${T.bold}${title}${T.reset}`);
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
-  }
-}
+  const width = getTerminalWidth();
+  
+  const topLine = `${T.border}╔${'═'.repeat(width - 2)}╗${T.reset}`;
+  const divLine = `${T.border}╠${'═'.repeat(width - 2)}╣${T.reset}`;
+  const botLine = `${T.border}╚${'═'.repeat(width - 2)}╝${T.reset}`;
 
-function printFooter(tipText = '') {
-  const T = themeEngine.getTheme();
-  if (tipText) {
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
-    console.log(`  ${T.title}💡 Tip:${T.reset} ${T.dim}${tipText}${T.reset}`);
+  console.log(topLine);
+
+  if (title) {
+    const visTitle = getVisualWidth(title);
+    const padLeft = Math.max(0, Math.floor((width - 2 - visTitle) / 2));
+    const padRight = Math.max(0, width - 2 - visTitle - padLeft);
+    console.log(`${T.border}║${T.reset}${' '.repeat(padLeft)}${T.title}${T.bold}${title}${T.reset}${' '.repeat(padRight)}${T.border}║${T.reset}`);
+    console.log(divLine);
   }
-  console.log(`${T.border}════════════════════════════════════════════════════════════════════════════${T.reset}`);
+
+  rows.forEach(row => {
+    if (typeof row === 'object') {
+      console.log(formatBoxRow(row.text || row.label || '', row.tag || '', width));
+    } else {
+      console.log(formatBoxRow(row, '', width));
+    }
+  });
+
+  if (tipText) {
+    console.log(divLine);
+    const tipStr = `${T.title}💡 Tip:${T.reset} ${T.dim}${tipText}${T.reset}`;
+    console.log(formatBoxRow(tipStr, '', width));
+  }
+
+  console.log(botLine);
 }
 
 /**
- * Interactive Arrow-Key Menu Selector with Live Search (/ key)
+ * Interactive Arrow-Key Menu Selector (↑ Up / ↓ Down / Enter / Esc / Live Search /)
+ * Completely eliminates number selection and enforces arrow key cursor navigation ONLY!
  * @param {Array} options - List of string options or objects { label, tag, value }
- * @param {string} promptText - Prompt header title
+ * @param {string} promptText - Header title
  * @param {function} headerFn - Banner callback
- * @param {string} tipText - Footer shortcut tips
+ * @param {string} tipText - Shortcut footer tips
  * @returns {Promise<number>} Selected index
  */
 function promptSelect(options, promptText = 'Select an option using ↑/↓ arrows and press Enter:', headerFn = null, tipText = 'Use ↑/↓ Arrow Keys, / to search, Enter to select, Esc to back') {
@@ -119,38 +160,44 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
     }
 
     function render() {
-      console.clear();
+      clearScreen();
       if (typeof headerFn === 'function') {
         headerFn();
       }
 
-      printHeader(promptText);
+      const width = getTerminalWidth();
+      const filtered = getFilteredOptions();
+      const rows = [];
 
       if (isSearchMode) {
-        console.log(`  ${T.title}/ Search Filter:${T.reset} ${T.bold}${searchQuery}_${T.reset}`);
-        console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+        rows.push({
+          label: `${T.title}/ Search Filter:${T.reset} ${T.bold}${searchQuery}_${T.reset}`,
+          tag: `${T.dim}(Esc to clear)${T.reset}`,
+        });
+        rows.push({ label: `${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}` });
       }
 
-      const filtered = getFilteredOptions();
       if (filtered.length === 0) {
-        console.log(`  ${T.warning}No items matching "${searchQuery}"${T.reset}`);
+        rows.push({ label: `${T.warning}✖ No items matching "${searchQuery}"${T.reset}` });
       } else {
         if (selectedIndex >= filtered.length) selectedIndex = 0;
         filtered.forEach((item, idx) => {
-          const label = typeof item.opt === 'string' ? item.opt : item.opt.label;
+          const rawLabel = typeof item.opt === 'string' ? item.opt : item.opt.label;
+          // Strip out any legacy number prefixes like [1], [2] to ensure 100% arrow-key only navigation
+          const cleanLabel = rawLabel.replace(/^⚡\s*\[\d+\]\s*/, '⚡ ').replace(/^⚙️\s*\[\d+\]\s*/, '⚙️ ').replace(/^🚀\s*\[\d+\]\s*/, '🚀 ').replace(/^🔍\s*\[\d+\]\s*/, '🔍 ').replace(/^📂\s*\[\d+\]\s*/, '📂 ').replace(/^🛡️\s*\[\d+\]\s*/, '🛡️ ').replace(/^🩺\s*\[\d+\]\s*/, '🩺 ').replace(/^🔄\s*\[\d+\]\s*/, '🔄 ').replace(/^🖱️\s*\[\d+\]\s*/, '🖱️ ').replace(/^📦\s*\[\d+\]\s*/, '📦 ').replace(/^🧹\s*\[\d+\]\s*/, '🧹 ').replace(/^🧪\s*\[\d+\]\s*/, '🧪 ').replace(/^🎨\s*\[\d+\]\s*/, '🎨 ').replace(/^❌\s*\[\d+\]\s*/, '❌ ').replace(/^\[\d+\]\s*/, '');
           const tag = (typeof item.opt === 'object' && item.opt.tag) ? item.opt.tag : '';
 
           if (idx === selectedIndex) {
-            const selLabel = `${T.border}${T.bold}❯ ${label}${T.reset}`;
-            console.log(formatRow(selLabel, tag));
+            const selLabel = `${T.bgActive} ❯ ${cleanLabel} ${T.reset}`;
+            rows.push({ label: selLabel, tag });
           } else {
-            const dimLabel = `  ${T.dim}${label}${T.reset}`;
-            console.log(formatRow(dimLabel, tag));
+            const dimLabel = `   ${T.dim}${cleanLabel}${T.reset}`;
+            rows.push({ label: dimLabel, tag });
           }
         });
       }
 
-      printFooter(isSearchMode ? 'Type to search, Backspace to delete, Esc to clear search' : tipText);
+      printBoxContainer(rows, promptText, isSearchMode ? 'Type to filter, Backspace to delete, Esc to exit search' : tipText);
     }
 
     render();
@@ -244,27 +291,27 @@ function promptMultiSelect(options, promptText = 'Select applications to patch (
     process.stdin.resume();
 
     function render() {
-      console.clear();
+      clearScreen();
       if (typeof headerFn === 'function') headerFn();
 
-      printHeader(promptText);
-
+      const rows = [];
       options.forEach((opt, idx) => {
-        const label = typeof opt === 'string' ? opt : opt.label;
+        const rawLabel = typeof opt === 'string' ? opt : opt.label;
+        const cleanLabel = rawLabel.replace(/^\[\d+\]\s*/, '');
         const tag = (typeof opt === 'object' && opt.tag) ? opt.tag : '';
         const isChecked = checkedState[idx];
         const checkMark = isChecked ? `${T.success}[x]${T.reset}` : `${T.dim}[ ]${T.reset}`;
 
         if (idx === cursor) {
-          const lineText = `${T.border}${T.bold}❯ ${checkMark} ${label}${T.reset}`;
-          console.log(formatRow(lineText, tag));
+          const lineText = `${T.bgActive} ❯ ${checkMark} ${cleanLabel} ${T.reset}`;
+          rows.push({ label: lineText, tag });
         } else {
-          const lineText = `  ${checkMark} ${T.dim}${label}${T.reset}`;
-          console.log(formatRow(lineText, tag));
+          const lineText = `   ${checkMark} ${T.dim}${cleanLabel}${T.reset}`;
+          rows.push({ label: lineText, tag });
         }
       });
 
-      printFooter('Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm, Esc to back');
+      printBoxContainer(rows, promptText, 'Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm, Esc to back');
     }
 
     render();
@@ -362,11 +409,12 @@ module.exports = {
   promptSelect,
   promptMultiSelect,
   createSpinner,
-  formatRow,
-  printHeader,
-  printFooter,
+  printBoxContainer,
+  formatBoxRow,
+  clearScreen,
   stripAnsi,
   getVisualWidth,
+  getTerminalWidth,
   beep,
   C: themeEngine.getTheme(),
 };

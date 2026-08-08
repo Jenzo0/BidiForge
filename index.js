@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.4 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.5 Engine)
  * Universal BiDi Compatibility Layer for Electron
- * Centered Cyberpunk Logo Box, Sleek Horizontal Dividers, Live Search (/), Multi-Select Checkboxes, & Theme Switcher
+ * Full Terminal Width Cyberpunk Boxes, Erased Scrollback Buffer, Arrow Key Cursor Navigation ONLY (No numbers)
  * 
- * @version 3.4.0
+ * @version 3.5.0
  * @author Jenzo0
  */
 
@@ -25,9 +25,9 @@ const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
 const updater = require('./core/updater');
 const themeEngine = require('./ui/theme');
-const { promptSelect, promptMultiSelect, createSpinner, formatRow, printHeader, printFooter, beep } = require('./ui/menu');
+const { promptSelect, promptMultiSelect, createSpinner, printBoxContainer, formatBoxRow, clearScreen, beep } = require('./ui/menu');
 
-const VERSION = '3.4.0';
+const VERSION = '3.5.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
@@ -190,7 +190,6 @@ async function patch(target = null, relaunch = true, force = false) {
   const results = { patched: [], skipped: [], failed: [] };
   
   for (const appInfo of apps) {
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
     console.log(` ${T.bold}Target:${T.reset} ${T.text}${appInfo.name}${T.reset} (v${appInfo.version})`);
     
     const asarPath = path.join(appInfo.path, 'resources', 'app.asar');
@@ -277,18 +276,19 @@ async function patch(target = null, relaunch = true, force = false) {
     }
   }
   
-  printHeader('SUMMARY REPORT');
-  console.log(formatRow(`${T.success}✓ Patched Applications:${T.reset}`, `${T.bold}${results.patched.length}${T.reset}`));
-  console.log(formatRow(`${T.warning}• Skipped (Patched):${T.reset}`, `${T.bold}${results.skipped.length}${T.reset}`));
-  console.log(formatRow(`${T.danger}✖ Failed Applications:${T.reset}`, `${T.bold}${results.failed.length}${T.reset}`));
-  printFooter('All patched applications are now active with Arabic BiDi support');
+  const summaryRows = [
+    { label: `${T.success}✓ Patched Applications:${T.reset}`, tag: `${T.bold}${results.patched.length}${T.reset}` },
+    { label: `${T.warning}• Skipped (Patched):${T.reset}`, tag: `${T.bold}${results.skipped.length}${T.reset}` },
+    { label: `${T.danger}✖ Failed Applications:${T.reset}`, tag: `${T.bold}${results.failed.length}${T.reset}` },
+  ];
+  printBoxContainer(summaryRows, 'SUMMARY REPORT', 'All patched applications are now active with Arabic BiDi support');
   console.log('');
   
   return results;
 }
 
 /**
- * Scan installed applications and display clean divider table with status badges
+ * Scan installed applications and display full-width Cyberpunk Boxed table with status badges
  */
 function scan() {
   logger.init();
@@ -303,8 +303,7 @@ function scan() {
     return apps;
   }
   
-  printHeader('DISCOVERED ELECTRON APPLICATIONS & STATUS');
-  
+  const rows = [];
   apps.forEach((app, idx) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
@@ -319,11 +318,11 @@ function scan() {
       statusTag = `${T.success}✓ Compatible${T.reset}`;
     }
     
-    const label = `${T.border}[${idx + 1}]${T.reset} ${T.text}${T.bold}${app.name}${T.reset} (v${app.version})`;
-    console.log(formatRow(label, statusTag));
+    const label = `${T.text}${T.bold}${app.name}${T.reset} (v${app.version})`;
+    rows.push({ label, tag: statusTag });
   });
   
-  printFooter('Select Option [2] in main menu to interactively patch applications');
+  printBoxContainer(rows, 'DISCOVERED ELECTRON APPLICATIONS & STATUS', 'Select Option in main menu to interactively patch applications');
   console.log('');
   return apps;
 }
@@ -333,7 +332,7 @@ function scan() {
  */
 function getAppSelectOptions(apps) {
   const T = themeEngine.getTheme();
-  return apps.map((app, idx) => {
+  return apps.map((app) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
     const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
@@ -379,17 +378,17 @@ function runHealthInspection(target = null) {
     const report = inspector.inspectApp(app);
     const scoreColor = report.score >= 80 ? T.success : (report.score >= 50 ? T.warning : T.danger);
 
-    printHeader(`HEALTH REPORT: ${report.appName} (v${report.appVersion})`);
-    console.log(`  Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}  —  Status: ${scoreColor}${report.status}${T.reset}`);
-    console.log(`  Inspected At: ${new Date(report.inspectedAt).toLocaleString()}`);
-    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+    const rows = [
+      { label: `Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}`, tag: `Status: ${scoreColor}${report.status}${T.reset}` },
+      { label: `Inspected At: ${new Date(report.inspectedAt).toLocaleString()}` },
+    ];
 
     report.checks.forEach(check => {
       const symbol = check.passed ? `${T.success}✓${T.reset}` : `${T.danger}✖${T.reset}`;
-      console.log(`  ${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}`);
+      rows.push({ label: `${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}` });
     });
 
-    printFooter('High score indicates optimal Arabic RTL injection');
+    printBoxContainer(rows, `HEALTH REPORT: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection');
     console.log('');
   }
 }
@@ -558,7 +557,7 @@ async function handleThemeSelection() {
   }));
   choices.push({ label: '* Back to Main Menu', tag: '' });
 
-  const idx = await promptSelect(choices, 'BidiForge Theme Palette Switcher:', banner);
+  const idx = await promptSelect(choices, 'BidiForge Full-TUI Color Theme Switcher:', banner);
   if (idx >= 0 && idx < themes.length) {
     themeEngine.setTheme(themes[idx].key);
     console.log(`\n  ${themeEngine.getTheme().success}✓ Theme changed to ${themes[idx].name}!${themeEngine.getTheme().reset}\n`);
@@ -574,30 +573,29 @@ function askQuestion(rl, query) {
 }
 
 /**
- * Interactive Menu Workflow with Arrow Key Keyboard Navigation & Search Filter
+ * Interactive Menu Workflow with Arrow Key Keyboard Cursor Navigation ONLY
  */
 async function interactiveMenu() {
-  const T = themeEngine.getTheme();
   const menuOptions = [
-    '⚡ [1] Fast Scan & List Compatible Applications',
-    '⚙️ [2] Select Applications to Patch (Multi-Checkboxes [x])',
-    '🚀 [3] Patch ALL Discovered Applications',
-    '🔍 [4] Search Application by Name',
-    '📂 [5] Patch Custom Application Path (Enter Path)',
-    '🛡️ [6] Rollback Application (Restore Original Backup)',
-    '🩺 [7] Run BiDi Diagnostic Health Inspector (--health)',
-    '🔄 [8] Live Hot-Reload Watcher Engine (--watch)',
-    '🖱️ [9] Register Windows Explorer Context Menu (Right-Click Patch)',
-    '📦 [10] Snapshot Restore Vault Manager (Multi-Version Rollback)',
-    '🧹 [11] Clean Temporary Files & Prune Old Backups',
-    '🧪 [12] Run Diagnostic Test Suite',
-    '🎨 [13] Change CLI Color Theme Palette',
-    '❌ [0] Exit BidiForge',
+    '⚡ Fast Scan & List Compatible Applications',
+    '⚙️ Select Applications to Patch (Multi-Checkboxes [x])',
+    '🚀 Patch ALL Discovered Applications',
+    '🔍 Search Application by Name',
+    '📂 Patch Custom Application Path (Enter Path)',
+    '🛡️ Rollback Application (Restore Original Backup)',
+    '🩺 Run BiDi Diagnostic Health Inspector (--health)',
+    '🔄 Live Hot-Reload Watcher Engine (--watch)',
+    '🖱️ Register Windows Explorer Context Menu (Right-Click Patch)',
+    '📦 Snapshot Restore Vault Manager (Multi-Version Rollback)',
+    '🧹 Clean Temporary Files & Prune Old Backups',
+    '🧪 Run Diagnostic Test Suite',
+    '🎨 Change CLI Color Theme Palette',
+    '❌ Exit BidiForge',
   ];
 
   let running = true;
   while (running) {
-    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.4 Main Menu — OpenCode CLI TUI Engine:', banner);
+    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.5 Main Menu — Advanced TUI Engine:', banner);
     
     if (selectedIdx === -1 || selectedIdx === 13) {
       running = false;
@@ -698,12 +696,11 @@ async function interactiveMenu() {
       case 9: { // Vault Manager
         banner();
         const snapshots = vault.listSnapshots();
-        printHeader(`VAULT SNAPSHOT REGISTRY (${snapshots.length} snapshots)`);
-        snapshots.forEach((s, idx) => {
-          const label = `${themeEngine.getTheme().border}[${idx+1}]${themeEngine.getTheme().reset} ${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`;
-          console.log(formatRow(label, `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`));
-        });
-        printFooter('Use "node index.js vault restore <id>" to restore any snapshot');
+        const rows = snapshots.map((s) => ({
+          label: `${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`,
+          tag: `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`,
+        }));
+        printBoxContainer(rows, `VAULT SNAPSHOT REGISTRY (${snapshots.length} snapshots)`, 'Use "node index.js vault restore <id>" to restore any snapshot');
         break;
       }
 
