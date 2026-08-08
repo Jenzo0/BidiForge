@@ -1,8 +1,8 @@
 /**
- * BidiForge — Windows Shell Integration (v3.2 Engine)
- * Complete Windows Explorer Context Menu integration for Folders, Whitespace, & EXE files
+ * BidiForge — Windows Shell Integration (v3.7.2 Engine)
+ * Safe Windows Explorer Context Menu integration (NO double-click hijacking)
  * 
- * @version 3.2.0
+ * @version 3.7.2
  * @author Jenzo0
  */
 
@@ -11,7 +11,8 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Register BidiForge in all Windows Explorer Context Menu locations
+ * Register BidiForge in Windows Explorer Context Menu safely
+ * (Appears ONLY on Right-Click, NEVER overrides double-click default action)
  * @returns {object} Result object
  */
 function register() {
@@ -19,6 +20,9 @@ function register() {
     if (process.platform !== 'win32') {
       return { success: false, error: 'Windows Explorer integration is only supported on Windows OS' };
     }
+
+    // First purge any legacy keys to prevent double-click hijacking
+    unregister();
 
     const batPath = path.join(__dirname, '..', 'BidiForge.bat');
     if (!fs.existsSync(batPath)) {
@@ -28,22 +32,22 @@ function register() {
     const command = `"${batPath}" patch "%1"`;
     const bgCommand = `"${batPath}" patch "%V"`;
     
+    // SAFE REGISTRY TARGETS (NO "Position = Top" to prevent double-click override)
     const targets = [
       { key: 'HKCU\\Software\\Classes\\Directory\\Background\\shell\\BidiForge', cmd: bgCommand, title: 'Patch Arabic BiDi with BidiForge ⚡' },
       { key: 'HKCU\\Software\\Classes\\Directory\\shell\\BidiForge', cmd: command, title: 'Patch Arabic BiDi with BidiForge ⚡' },
       { key: 'HKCU\\Software\\Classes\\exefile\\shell\\BidiForge', cmd: command, title: 'Patch Arabic BiDi with BidiForge ⚡' },
-      { key: 'HKCU\\Software\\Classes\\*\\shell\\BidiForge', cmd: command, title: 'Patch Arabic BiDi with BidiForge ⚡' },
     ];
 
     for (const target of targets) {
       execSync(`reg add "${target.key}" /ve /d "${target.title}" /f`, { stdio: 'pipe' });
-      execSync(`reg add "${target.key}" /v "Position" /d "Top" /f`, { stdio: 'pipe' });
+      // NEVER set Position=Top on exefile shell keys!
       execSync(`reg add "${target.key}\\command" /ve /d "${target.cmd}" /f`, { stdio: 'pipe' });
     }
 
     return {
       success: true,
-      message: 'Successfully registered "Patch Arabic BiDi with BidiForge ⚡" in Windows Explorer context menu! (Appears on Right-Click or Show More Options in Windows 11)',
+      message: 'Successfully registered "Patch Arabic BiDi with BidiForge ⚡" in Windows Explorer context menu! (Appears on Right-Click ONLY, double-click is 100% safe)',
     };
   } catch (e) {
     return { success: false, error: e.message };
@@ -51,7 +55,7 @@ function register() {
 }
 
 /**
- * Unregister BidiForge from Windows Explorer Context Menu
+ * Unregister BidiForge from Windows Explorer Context Menu completely
  * @returns {object} Result object
  */
 function unregister() {
