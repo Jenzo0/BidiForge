@@ -33,18 +33,24 @@ const C = {
   red: '\x1b[31;1m',
   magenta: '\x1b[35;1m',
   white: '\x1b[37;1m',
+  blue: '\x1b[34;1m',
 };
 
 /**
- * Print single professional ASCII banner with pixel-perfect alignment
+ * Print stylized Cyberpunk ASCII banner with 100% pixel-perfect symmetry
  */
 function banner() {
   console.log('');
-  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`${C.cyan}║                      ${C.bold}B I D I F O R G E${C.reset}${C.cyan}                       ║${C.reset}`);
-  console.log(`${C.cyan}║         ${C.white}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}            ║${C.reset}`);
-  console.log(`${C.cyan}║                       ${C.yellow}Developer: ${DEVELOPER}${C.reset}${C.cyan}                      ║${C.reset}`);
-  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`${C.cyan}╔═════════════════════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`${C.cyan}║${C.reset} ${C.magenta}██████╗ ██╗██████╗ ██╗███████╗██╗  ██╗██████╗  ██████╗ ███████╗${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║${C.reset} ${C.magenta}██╔══██╗██║██╔══██╗██║██╔════╝██║  ██║██╔══██╗██╔════╝ ██╔════╝${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║${C.reset} ${C.magenta}██████╔╝██║██║  ██║██║█████╗  ███████║██████╔╝██║  ███╗█████╗  ${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║${C.reset} ${C.magenta}██╔══██╗██║██║  ██║██║██╔══╝  ██╔══██║██╔══██╗██║   ██║██╔══╝  ${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║${C.reset} ${C.magenta}██████╔╝██║██████╔╝██║██║     ██║  ██║██║  ██║╚██████╔╝███████╗${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║${C.reset} ${C.magenta}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║             ${C.white}${C.bold}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}           ║${C.reset}`);
+  console.log(`${C.cyan}║                        ${C.yellow}Developer: ${DEVELOPER}${C.reset}${C.cyan}                        ║${C.reset}`);
+  console.log(`${C.cyan}╚═════════════════════════════════════════════════════════════════╝${C.reset}`);
   console.log('');
 }
 
@@ -168,7 +174,7 @@ async function patch(target = null, relaunch = true, force = false) {
     const updateCheck = status.checkSafeUpdateStatus(appInfo.path, currentHash, appInfo.version);
 
     if (updateCheck.state === 'PATCHED_VERIFIED' && !force) {
-      console.log(`  ${C.green}✓ Already patched & up-to-date (SHA-256 hash verified).${C.reset}`);
+      console.log(`  ${C.green}YES → Already patched (SHA-256 hash verified)${C.reset}\n`);
       results.skipped.push(appInfo);
       continue;
     }
@@ -248,7 +254,7 @@ async function patch(target = null, relaunch = true, force = false) {
 }
 
 /**
- * Scan installed applications and display clean formatted table with Safe Update Detection
+ * Scan installed applications and display clean formatted card table
  */
 function scan() {
   logger.init();
@@ -270,21 +276,18 @@ function scan() {
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
     const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version);
     
-    let tag = '';
-    let statusMsg = '';
+    let statusDisplay = '';
     
     if (updateCheck.state === 'PATCHED_VERIFIED') {
-      tag = `${C.yellow}[PATCHED]${C.reset}`;
-      statusMsg = `${C.green}✓ Up-to-date${C.reset}`;
+      statusDisplay = `${C.yellow}[PATCHED]${C.reset}  ${C.green}✓ Up-to-date${C.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
-      tag = `${C.magenta}[UPDATE DETECTED]${C.reset}`;
-      statusMsg = `${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
+      statusDisplay = `${C.magenta}[UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
     } else {
-      tag = `${C.green}[COMPATIBLE]${C.reset}`;
-      statusMsg = `${C.green}✓ Compatible${C.reset}`;
+      // Clean display without duplicating [COMPATIBLE]
+      statusDisplay = `${C.green}✓ Compatible${C.reset}`;
     }
     
-    console.log(`  ${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})  ${tag}  ${statusMsg}`);
+    console.log(`  ${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})   ${statusDisplay}`);
   });
   
   console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}\n`);
@@ -436,7 +439,7 @@ async function interactiveMenu() {
           if (ans.toUpperCase() === 'A') {
             const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL ${apps.length} applications? [Y/n]: ${C.reset}`)).trim();
             if (confirmAll.toLowerCase() !== 'n') {
-              await patch(null, true, true);
+              await patch(null, true, false);
             }
           } else if (ans) {
             const num = parseInt(ans, 10);
@@ -450,7 +453,7 @@ async function interactiveMenu() {
             if (targetApp) {
               const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name} (v${targetApp.version})? [Y/n]: ${C.reset}`)).trim();
               if (confirmSingle.toLowerCase() !== 'n') {
-                await patch(targetApp, true, true);
+                await patch(targetApp, true, false);
               }
             } else {
               console.log(`${C.red}[X] No matching application found for selection.${C.reset}`);
@@ -476,7 +479,7 @@ async function interactiveMenu() {
             const targetApp = apps[num - 1];
             const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
             if (confirmSingle.toLowerCase() !== 'n') {
-              await patch(targetApp, true, true);
+              await patch(targetApp, true, false);
             }
           }
         }
@@ -486,7 +489,7 @@ async function interactiveMenu() {
       case '3': {
         const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL discovered applications? [Y/n]: ${C.reset}`)).trim();
         if (confirmAll.toLowerCase() !== 'n') {
-          await patch(null, true, true);
+          await patch(null, true, false);
         }
         break;
       }
@@ -508,7 +511,7 @@ async function interactiveMenu() {
             apps.forEach((a, i) => console.log(`  ${C.cyan}[${i+1}]${C.reset} ${C.bold}${a.name}${C.reset} (v${a.version})`));
             const doPatch = (await askQuestion(rl, `\n${C.yellow}[?] Are you sure you want to patch ${apps[0].name}? [Y/n]: ${C.reset}`)).trim();
             if (doPatch.toLowerCase() !== 'n') {
-              await patch(apps[0], true, true);
+              await patch(apps[0], true, false);
             }
           }
         }

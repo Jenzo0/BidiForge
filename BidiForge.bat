@@ -10,6 +10,12 @@ REM Check Node.js
 where node >nul 2>&1
 if %errorLevel% neq 0 goto :no_node
 
+REM Check and auto-install dependencies if node_modules is missing
+if not exist node_modules (
+  echo [!] Installing required dependencies, please wait...
+  call npm install --no-audit --no-fund >nul 2>&1
+)
+
 set "ARG1=%~1"
 set "ARG2=%~2"
 

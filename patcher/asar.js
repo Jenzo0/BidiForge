@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execSync } = require('child_process');
 
 let asar = null;
 try {
@@ -16,11 +17,23 @@ try {
 } catch (e) {}
 
 /**
- * Ensure asar package is loaded
+ * Ensure asar package is loaded; auto-install dependencies if missing
  */
 function ensureAsar() {
-  if (!asar) {
+  if (asar) return;
+  
+  try {
     asar = require('@electron/asar');
+  } catch (e) {
+    const rootDir = path.join(__dirname, '..');
+    console.log('\n  \x1b[33;1m⚡ Dependencies missing: Auto-installing @electron/asar... (Please wait)\x1b[0m');
+    try {
+      execSync('npm install --no-audit --no-fund', { cwd: rootDir, stdio: 'pipe' });
+      asar = require('@electron/asar');
+      console.log('  \x1b[32;1m✓ Dependencies installed successfully!\x1b[0m\n');
+    } catch (installErr) {
+      throw new Error(`Missing dependency @electron/asar. Please run "npm install" in ${rootDir}`);
+    }
   }
 }
 
@@ -66,25 +79,21 @@ async function pack(dirPath, outputPath) {
   const tmpOutputPath = outputPath + '.bidiforge.tmp';
   
   try {
-    // Remove stale tmp file if exists
     if (fs.existsSync(tmpOutputPath)) {
       fs.unlinkSync(tmpOutputPath);
     }
 
-    // Create ASAR package at temporary target path
     await asar.createPackage(dirPath, tmpOutputPath);
     
     if (!fs.existsSync(tmpOutputPath)) {
       throw new Error('Temporary ASAR file was not generated');
     }
     
-    // Verify tmp ASAR header integrity before replacing original
     const raw = asar.getRawHeader(tmpOutputPath);
     if (!raw || !raw.header) {
       throw new Error('Repacked ASAR header validation failed');
     }
 
-    // Atomic replacement
     fs.renameSync(tmpOutputPath, outputPath);
     const stats = fs.statSync(outputPath);
     
