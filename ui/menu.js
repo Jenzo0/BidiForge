@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes Agent Card TUI Engine (v3.7.3 Engine)
- * Smooth Compact TUI Rendering (Guaranteed Zero Black Screen & Auto-Paginated Viewport)
+ * BidiForge — Hermes Agent Card TUI Engine (v3.8.0 Engine)
+ * Perfect Vertical Line Border Alignment, Full Hero Logo Support, & Arrow Cursor Selection Everywhere
  * 
- * @version 3.7.3
+ * @version 3.8.0
  * @author Jenzo0
  */
 
@@ -10,7 +10,7 @@ const readline = require('readline');
 const themeEngine = require('./theme');
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const DEFAULT_CARD_WIDTH = 66;
+const DEFAULT_CARD_WIDTH = 68;
 
 /**
  * Smoothly refresh terminal screen in-place without buffer destruction or black screen
@@ -50,27 +50,27 @@ function stripAnsi(str) {
 }
 
 /**
- * Get accurate visual width of string taking ANSI codes, emoji, and surrogate pairs into account
+ * Accurate terminal character width helper (Fixes crooked right border line alignment)
  */
 function getVisualWidth(str) {
   const clean = stripAnsi(str);
   let w = 0;
   for (let i = 0; i < clean.length; i++) {
-    const code = clean.charCodeAt(i);
-    if (code >= 0xD800 && code <= 0xDBFF) {
-      w += 2;
+    const code = clean.codePointAt(i);
+    if (code > 0xFFFF) {
+      w += 2; // Emoji in Astral Plane (e.g. 🚀, 📂, 🛡️) occupy 2 display columns
       i++; // Skip low surrogate
-    } else if (code > 0x2000) {
-      w += 2; // Multi-byte emoji or wide symbol
+    } else if (code === 0xFE0F) {
+      w += 0; // Variation Selector-16
     } else {
-      w += 1;
+      w += 1; // Standard symbols (✓ U+2713, ★ U+2605, ⚡ U+26A1) occupy 1 display column
     }
   }
   return w;
 }
 
 /**
- * Format a single line enclosed inside a Hermes rounded card container
+ * Format a single line enclosed inside a Hermes rounded card container with 100% straight vertical border
  */
 function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH) {
   const T = themeEngine.getTheme();
@@ -129,19 +129,18 @@ function printPromptBar(tipText = '') {
 }
 
 /**
- * Compact Header Banner for Interactive Menus to prevent viewport scrolling
+ * Compact Header Banner for Interactive Menus in smaller terminals
  */
 function printCompactMenuHeader() {
   const T = themeEngine.getTheme();
-  console.log(`${T.title}${T.bold}  ⚡ BidiForge Engine v3.7.3${T.reset} ${T.border}· Universal BiDi Compatibility Layer · Developer: Jenzo0${T.reset}\n`);
+  console.log(`${T.title}${T.bold}  ⚡ BidiForge Engine v3.8.0${T.reset} ${T.border}· Universal BiDi Compatibility Layer · Developer: Jenzo0${T.reset}\n`);
 }
 
 /**
- * Interactive Hermes Card Selector with Auto-Windowing Pagination
- * Guarantees zero viewport overflow and zero black screens
+ * Interactive Hermes Card Selector with Auto-Windowing Pagination & Full Banner support
  * @param {Array} options - List of string options or objects { label, tag, value }
  * @param {string} promptText - Card title
- * @param {function} headerFn - Optional custom header callback (defaults to compact)
+ * @param {function} headerFn - Header callback
  * @param {string} subtitleText - Card subtitle state
  * @returns {Promise<number>} Selected index
  */
@@ -176,9 +175,15 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
     function render() {
       clearScreen();
       
-      // Use compact header in interactive mode to prevent terminal scrolling overflow
-      if (typeof headerFn === 'function' && headerFn.name !== 'banner') {
-        headerFn();
+      const termRows = process.stdout.rows || 24;
+      
+      // Render full banner header if provided and terminal has enough height (>= 32 lines)
+      if (typeof headerFn === 'function') {
+        if (termRows >= 32) {
+          headerFn();
+        } else {
+          printCompactMenuHeader();
+        }
       } else {
         printCompactMenuHeader();
       }
@@ -199,9 +204,8 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
       } else {
         if (selectedIndex >= filtered.length) selectedIndex = 0;
 
-        // Auto-calculate max visible rows based on terminal window height
-        const termRows = process.stdout.rows || 24;
-        const maxVisible = Math.max(5, Math.min(10, termRows - 12));
+        // Auto-calculate max visible rows dynamically to prevent viewport overflow
+        const maxVisible = Math.max(4, Math.min(10, termRows - (termRows >= 32 ? 26 : 10)));
 
         let startIdx = 0;
         let endIdx = filtered.length;
@@ -333,7 +337,9 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
 
     function render() {
       clearScreen();
-      if (typeof headerFn === 'function' && headerFn.name !== 'banner') {
+      
+      const termRows = process.stdout.rows || 24;
+      if (typeof headerFn === 'function' && termRows >= 32) {
         headerFn();
       } else {
         printCompactMenuHeader();

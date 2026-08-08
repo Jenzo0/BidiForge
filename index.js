@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.7 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.8.0 Engine)
  * Universal BiDi Compatibility Layer for Electron
- * Hermes Agent TUI Engine: Embedded Title Card Containers (╭─ Title ───╮), Erased Scrollback Buffer, Arrow Cursor ONLY
+ * Hermes Agent TUI Engine: Straight Line Border Alignment, Interactive Scan Selector, & Full Hero Logo Banner
  * 
- * @version 3.7.0
+ * @version 3.8.0
  * @author Jenzo0
  */
 
@@ -27,18 +27,15 @@ const updater = require('./core/updater');
 const themeEngine = require('./ui/theme');
 const { promptSelect, promptMultiSelect, createSpinner, printHermesCard, formatCardRow, printPromptBar, clearScreen, beep } = require('./ui/menu');
 
-const VERSION = '3.7.0';
+const VERSION = '3.8.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
- * Print Hermes Agent-inspired Hero Banner with Split Logo Art & System Overview
+ * Print Full ASCII Hero Banner with Split Logo Art & System Overview
  */
 function banner() {
   const T = themeEngine.getTheme();
   const appsCount = detector.detectAll().length;
-
-  console.log(`\n${T.dim}Welcome to BidiForge! Use Arrow Keys to navigate or / to filter.${T.reset}`);
-  console.log(`${T.title}✦ Tip: Universal BiDi compatibility engine for all Electron applications.${T.reset}\n`);
 
   console.log(`${T.title}${T.bold}  ██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${T.reset}`);
   console.log(`${T.title}${T.bold}  ██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${T.reset}`);
@@ -306,51 +303,10 @@ async function patch(target = null, relaunch = true, force = false) {
     { label: `${T.warning}• Skipped (Patched):${T.reset}`, tag: `${T.bold}${results.skipped.length}${T.reset}` },
     { label: `${T.danger}✖ Failed Applications:${T.reset}`, tag: `${T.bold}${results.failed.length}${T.reset}` },
   ];
-  printHermesCard(summaryRows, '⚙️ Patch Summary Report', 'All patched applications active with Arabic BiDi', 66);
+  printHermesCard(summaryRows, '⚙️ Patch Summary Report', 'All patched applications active with Arabic BiDi', 68);
   console.log('');
   
   return results;
-}
-
-/**
- * Scan installed applications and display Hermes Card Table
- */
-function scan() {
-  logger.init();
-  const T = themeEngine.getTheme();
-  
-  console.log(`${T.border}• Starting Universal Electron application scan...${T.reset}`);
-  const apps = detector.detectAll();
-  console.log(`${T.success}• Found ${apps.length} Electron application(s)${T.reset}\n`);
-  
-  if (apps.length === 0) {
-    console.log(`${T.warning}No Electron applications discovered on this system.${T.reset}`);
-    return apps;
-  }
-  
-  const rows = [];
-  apps.forEach((app) => {
-    const asarPath = path.join(app.path, 'resources', 'app.asar');
-    const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
-    const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
-    
-    let statusTag = '';
-    if (updateCheck.state === 'PATCHED_VERIFIED') {
-      statusTag = `${T.success}✓ Compatible${T.reset}  ${T.border}★ (Patched)${T.reset}`;
-    } else if (updateCheck.state === 'APP_UPDATED') {
-      statusTag = `${T.accent}[VENDOR UPDATE DETECTED]${T.reset}  ${T.warning}⚡ Auto-Repair Ready${T.reset}`;
-    } else {
-      statusTag = `${T.success}✓ Compatible${T.reset}`;
-    }
-    
-    const label = `${T.text}${T.bold}${app.name}${T.reset} (v${app.version})`;
-    rows.push({ label, tag: statusTag });
-  });
-  
-  printHermesCard(rows, '⚙️ Discovered Applications & Compatibility Status', `Current: ${apps.length} Electron Applications Discovered`, 66);
-  printPromptBar('Use Arrow Keys to select application to patch');
-  console.log('');
-  return apps;
 }
 
 /**
@@ -378,6 +334,32 @@ function getAppSelectOptions(apps) {
       value: app,
     };
   });
+}
+
+/**
+ * Interactive Application Scan & Arrow Key Selection Handler
+ */
+async function scan() {
+  logger.init();
+  const T = themeEngine.getTheme();
+  
+  const apps = detector.detectAll();
+  if (apps.length === 0) {
+    console.log(`${T.warning}No Electron applications discovered on this system.${T.reset}`);
+    return apps;
+  }
+  
+  const appChoices = getAppSelectOptions(apps);
+  appChoices.push({ label: '* Back to Main Menu', tag: '' });
+
+  const selectedIdx = await promptSelect(appChoices, '⚙️ Discovered Applications & Interactive Selector', banner, `Current: ${apps.length} Electron Applications Discovered`);
+  
+  if (selectedIdx >= 0 && selectedIdx < apps.length) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    await handleAppSelection(rl, apps[selectedIdx]);
+    rl.close();
+  }
+  return apps;
 }
 
 /**
@@ -414,7 +396,7 @@ function runHealthInspection(target = null) {
       rows.push({ label: `${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}` });
     });
 
-    printHermesCard(rows, `🩺 BiDi Health Report: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection', 66);
+    printHermesCard(rows, `🩺 BiDi Health Report: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection', 68);
     console.log('');
   }
 }
@@ -630,9 +612,8 @@ async function interactiveMenu() {
     }
     
     switch (selectedIdx) {
-      case 0: { // Scan
-        banner();
-        scan();
+      case 0: { // Interactive Scan & Direct Selector
+        await scan();
         break;
       }
         
@@ -695,7 +676,7 @@ async function interactiveMenu() {
 
       case 7: { // Watch
         banner();
-        const apps = scan();
+        const apps = detector.detectAll();
         if (apps.length > 0) {
           const appChoices = getAppSelectOptions(apps);
           const appIdx = await promptSelect(appChoices, '⚙️ Select Application for Live Hot-Reload Watcher', banner);
@@ -726,7 +707,7 @@ async function interactiveMenu() {
           label: `${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`,
           tag: `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`,
         }));
-        printHermesCard(rows, `📦 Vault Snapshot Registry (${snapshots.length} snapshots)`, 'Use "node index.js vault restore <id>" to restore any snapshot', 66);
+        printHermesCard(rows, `📦 Vault Snapshot Registry (${snapshots.length} snapshots)`, 'Use "node index.js vault restore <id>" to restore any snapshot', 68);
         printPromptBar('Use vault restore command to roll back to any historical snapshot');
         break;
       }
@@ -770,8 +751,7 @@ async function interactiveMenu() {
       case 'scan':
       case '--scan':
       case '-s':
-        banner();
-        scan();
+        await scan();
         break;
         
       case 'patch':
@@ -849,8 +829,7 @@ async function interactiveMenu() {
         
       case 'status':
       case '--status':
-        banner();
-        scan();
+        await scan();
         break;
         
       case 'repair':
