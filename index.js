@@ -41,16 +41,16 @@ const C = {
  */
 function banner() {
   console.log('');
-  console.log(`${C.cyan}╔═════════════════════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`${C.cyan}║${C.reset} ${C.magenta}██████╗ ██╗██████╗ ██╗███████╗██╗  ██╗██████╗  ██████╗ ███████╗${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║${C.reset} ${C.magenta}██╔══██╗██║██╔══██╗██║██╔════╝██║  ██║██╔══██╗██╔════╝ ██╔════╝${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║${C.reset} ${C.magenta}██████╔╝██║██║  ██║██║█████╗  ███████║██████╔╝██║  ███╗█████╗  ${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║${C.reset} ${C.magenta}██╔══██╗██║██║  ██║██║██╔══╝  ██╔══██║██╔══██╗██║   ██║██╔══╝  ${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║${C.reset} ${C.magenta}██████╔╝██║██████╔╝██║██║     ██║  ██║██║  ██║╚██████╔╝███████╗${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║${C.reset} ${C.magenta}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝${C.reset} ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║             ${C.white}${C.bold}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}           ║${C.reset}`);
+  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║ ${C.yellow}${C.bold}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝${C.reset} ${C.cyan}║${C.reset}`);
+  console.log(`${C.cyan}║            ${C.white}${C.bold}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}             ║${C.reset}`);
   console.log(`${C.cyan}║                        ${C.yellow}Developer: ${DEVELOPER}${C.reset}${C.cyan}                        ║${C.reset}`);
-  console.log(`${C.cyan}╚═════════════════════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════╝${C.reset}`);
   console.log('');
 }
 
@@ -203,7 +203,7 @@ async function patch(target = null, relaunch = true, force = false) {
       const bak = backup.create(asarPath, appInfo);
       if (!bak.success) throw new Error(`Backup failed: ${bak.error}`);
       
-      console.log(`  ${C.dim}• [4/6] Injecting BiDi engine...${C.reset}`);
+      console.log(`  ${C.dim}• [4/6] Injecting BiDi engine (Developer: Jenzo0)...${C.reset}`);
       const inj = injector.inject(tempDir, appInfo);
       if (!inj.success) throw new Error(`Inject failed: ${inj.error}`);
       
@@ -254,7 +254,7 @@ async function patch(target = null, relaunch = true, force = false) {
 }
 
 /**
- * Scan installed applications and display clean formatted card table
+ * Scan installed applications and display clean formatted table
  */
 function scan() {
   logger.init();
@@ -279,11 +279,10 @@ function scan() {
     let statusDisplay = '';
     
     if (updateCheck.state === 'PATCHED_VERIFIED') {
-      statusDisplay = `${C.yellow}[PATCHED]${C.reset}  ${C.green}✓ Up-to-date${C.reset}`;
+      statusDisplay = `${C.green}✓ Compatible (Patched)${C.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
       statusDisplay = `${C.magenta}[UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
     } else {
-      // Clean display without duplicating [COMPATIBLE]
       statusDisplay = `${C.green}✓ Compatible${C.reset}`;
     }
     
@@ -292,6 +291,26 @@ function scan() {
   
   console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}\n`);
   return apps;
+}
+
+/**
+ * Handle selection of an already patched application
+ * @param {object} rl - Readline interface
+ * @param {object} app - Application object
+ */
+async function handleAlreadyPatchedApp(rl, app) {
+  console.log(`  ${C.yellow}YES → Already patched${C.reset}`);
+  console.log(`  ${C.dim}${app.name} (v${app.version}) is currently patched & verified.${C.reset}\n`);
+  console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Force Re-patch (Apply fresh BiDi patch)${C.reset}`);
+  console.log(`  ${C.cyan}[2]${C.reset} ${C.red}Rollback / Remove Patch (Restore original app backup)${C.reset}`);
+  console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Cancel / Back to Main Menu${C.reset}\n`);
+  
+  const subChoice = (await askQuestion(rl, `${C.yellow}Select an action [1-2, *]: ${C.reset}`)).trim();
+  if (subChoice === '1') {
+    await patch(app, true, true);
+  } else if (subChoice === '2') {
+    rollbackApp(app.name);
+  }
 }
 
 /**
@@ -451,9 +470,17 @@ async function interactiveMenu() {
             }
             
             if (targetApp) {
-              const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name} (v${targetApp.version})? [Y/n]: ${C.reset}`)).trim();
-              if (confirmSingle.toLowerCase() !== 'n') {
-                await patch(targetApp, true, false);
+              const asarPath = path.join(targetApp.path, 'resources', 'app.asar');
+              const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
+              const updateCheck = status.checkSafeUpdateStatus(targetApp.path, currentHash, targetApp.version);
+
+              if (updateCheck.state === 'PATCHED_VERIFIED') {
+                await handleAlreadyPatchedApp(rl, targetApp);
+              } else {
+                const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name} (v${targetApp.version})? [Y/n]: ${C.reset}`)).trim();
+                if (confirmSingle.toLowerCase() !== 'n') {
+                  await patch(targetApp, true, false);
+                }
               }
             } else {
               console.log(`${C.red}[X] No matching application found for selection.${C.reset}`);
@@ -477,9 +504,17 @@ async function interactiveMenu() {
           const num = parseInt(ans, 10);
           if (num > 0 && num <= apps.length) {
             const targetApp = apps[num - 1];
-            const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
-            if (confirmSingle.toLowerCase() !== 'n') {
-              await patch(targetApp, true, false);
+            const asarPath = path.join(targetApp.path, 'resources', 'app.asar');
+            const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
+            const updateCheck = status.checkSafeUpdateStatus(targetApp.path, currentHash, targetApp.version);
+
+            if (updateCheck.state === 'PATCHED_VERIFIED') {
+              await handleAlreadyPatchedApp(rl, targetApp);
+            } else {
+              const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
+              if (confirmSingle.toLowerCase() !== 'n') {
+                await patch(targetApp, true, false);
+              }
             }
           }
         }
@@ -508,10 +543,20 @@ async function interactiveMenu() {
           const apps = detector.detectAll().filter(a => a.name.toLowerCase().includes(nameQuery.toLowerCase()));
           console.log(`${C.green}• Found ${apps.length} matching application(s)${C.reset}\n`);
           if (apps.length > 0) {
+            const targetApp = apps[0];
             apps.forEach((a, i) => console.log(`  ${C.cyan}[${i+1}]${C.reset} ${C.bold}${a.name}${C.reset} (v${a.version})`));
-            const doPatch = (await askQuestion(rl, `\n${C.yellow}[?] Are you sure you want to patch ${apps[0].name}? [Y/n]: ${C.reset}`)).trim();
-            if (doPatch.toLowerCase() !== 'n') {
-              await patch(apps[0], true, false);
+            
+            const asarPath = path.join(targetApp.path, 'resources', 'app.asar');
+            const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
+            const updateCheck = status.checkSafeUpdateStatus(targetApp.path, currentHash, targetApp.version);
+
+            if (updateCheck.state === 'PATCHED_VERIFIED') {
+              await handleAlreadyPatchedApp(rl, targetApp);
+            } else {
+              const doPatch = (await askQuestion(rl, `\n${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
+              if (doPatch.toLowerCase() !== 'n') {
+                await patch(targetApp, true, false);
+              }
             }
           }
         }

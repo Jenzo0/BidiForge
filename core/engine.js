@@ -4,7 +4,7 @@
  * Aggregates rules from rules/ and profiles from profiles/
  * 
  * @version 3.0.0
- * @author Jenzo
+ * @author Jenzo0
  */
 
 const fs = require('fs');
@@ -44,7 +44,7 @@ function loadRules() {
 }
 
 /**
- * Load matching application profile from profiles/
+ * Load matching application profile from profiles/ (Specific profiles first, generic fallback last)
  */
 function loadProfile(appInfo = {}) {
   const profilesDir = path.join(__dirname, '..', 'profiles');
@@ -61,62 +61,70 @@ function loadProfile(appInfo = {}) {
     }
   }
   
-  try {
-    return require(path.join(profilesDir, 'generic-electron.js'));
-  } catch (e) {
-    return { name: 'generic-electron', extraCSS: '', extraJS: '' };
+  // Universal fallback profile
+  const genericPath = path.join(profilesDir, 'generic-electron.js');
+  if (fs.existsSync(genericPath)) {
+    try { return require(genericPath); } catch (e) {}
   }
+  
+  return { name: 'generic-electron', match: () => true, rules: {} };
 }
 
 /**
- * Generate aggregate CSS from rules and profile
+ * Generate combined CSS string from all active rules
  */
 function generateCSS(appInfo = {}) {
   const rules = loadRules();
   const profile = loadProfile(appInfo);
+  const cssParts = ['/* BidiForge BiDi Rules - Developer: Jenzo0 */'];
   
-  const cssParts = rules.map(r => r.css).filter(Boolean);
-  if (profile.extraCSS) cssParts.push(profile.extraCSS);
+  for (const rule of rules) {
+    if (rule.css) {
+      const customConfig = (profile.rules && profile.rules[rule.name]) || {};
+      const ruleCSS = typeof rule.css === 'function' ? rule.css(customConfig) : rule.css;
+      if (ruleCSS) cssParts.push(ruleCSS);
+    }
+  }
+
+  if (profile.extraCSS) {
+    cssParts.push(profile.extraCSS);
+  }
   
-  return cssParts.join(N10 + N10);
+  return cssParts.join('\n\n');
 }
 
 /**
- * Generate high-performance runtime JS engine with subtree-targeted MutationObserver
+ * Generate combined client JS script from all active rules
  */
 function generateJS(appInfo = {}) {
   const rules = loadRules();
   const profile = loadProfile(appInfo);
-  const rtlPattern = RTL_RANGES.join('');
+  const ruleJSParts = [];
   
-  const ruleJSParts = rules.map(r => r.js).filter(Boolean);
-  if (profile.extraJS) ruleJSParts.push(profile.extraJS);
+  for (const rule of rules) {
+    if (rule.js) {
+      const customConfig = (profile.rules && profile.rules[rule.name]) || {};
+      const ruleJS = typeof rule.js === 'function' ? rule.js(customConfig) : rule.js;
+      if (ruleJS) ruleJSParts.push(ruleJS);
+    }
+  }
 
+  if (profile.extraJS) {
+    ruleJSParts.push(profile.extraJS);
+  }
+  
   return [
+    '/* BidiForge BiDi Compatibility Engine v3.0.0 - Developer: Jenzo0 */',
     '(function(){',
-    'if(window.__bidiForge)return;',
-    `window.__bidiForge={version:"3.0.0",app:"${appInfo.name||'generic'}",profile:"${profile.name||'generic'}",status:"active"};`,
+    'if(window.__bidiForge_installed) return;',
+    'window.__bidiForge_installed = true;',
     
-    `var RTL=/[${rtlPattern}]/;`,
-    
-    // Helper: first strong character
-    'function firstStrong(t){',
-    '  if(!t)return null;',
-    '  for(var i=0;i<t.length;i++){',
-    '    var ch=t[i];',
-    '    if(RTL.test(ch))return "rtl";',
-    '    if(/[A-Za-z0-9]/.test(ch))return "ltr";',
-    '  }',
-    '  return null;',
-    '}',
-    
-    // Helper: extract direct text nodes
-    'function ownText(e){',
-    '  var s="",c=e.childNodes;',
-    '  for(var i=0;i<c.length;i++){',
-    '    if(c[i].nodeType===3)s+=c[i].textContent;',
-    '  }',
-    '  return s;',
+    // Core BiDi helper utilities
+    'var rtlRegex = new RegExp("[' + RTL_RANGES.join('') + ']");',
+    'function isRTL(text){ return rtlRegex.test(text || ""); }',
+    'function getFirstStrongChar(text){',
+    '  var m = (text || "").match(/[' + RTL_RANGES.join('') + 'a-zA-Z]/);',
+    '  return m ? m[0] : "";',
     '}',
     
     // Inject rule functions
@@ -178,25 +186,30 @@ function generateJS(appInfo = {}) {
     
     // Optimized Subtree MutationObserver
     'try {',
-    '  var obs = new MutationObserver(function(mutations){',
+    '  var observer = new MutationObserver(function(mutations){',
     '    for(var i=0; i<mutations.length; i++){',
     '      var m = mutations[i];',
-    '      if(m.type === "attributes" && m.attributeName && m.attributeName.indexOf("data-bidiforge") === 0) continue;',
     '      if(m.type === "childList"){',
     '        for(var j=0; j<m.addedNodes.length; j++){',
     '          queueSubtree(m.addedNodes[j]);',
     '        }',
-    '      } else if(m.target){',
+    '      } else if(m.type === "characterData"){',
     '        queueSubtree(m.target);',
     '      }',
     '    }',
     '  });',
-    '  obs.observe(document.body || document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["dir", "style", "class"] });',
+    '  observer.observe(document.body || document.documentElement, {',
+    '    childList: true,',
+    '    subtree: true,',
+    '    characterData: true,',
+    '  });',
     '} catch(_){}',
     
-    // Event listener for user typing input
-    'document.addEventListener("input", function(ev){',
-    '  if(ev.target) syncEditable(ev.target);',
+    // Keyup listener for input fields
+    'document.addEventListener("keyup", function(e){',
+    '  if(e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)){',
+    '    queueSubtree(e.target);',
+    '  }',
     '}, true);',
     
     '})();',
@@ -210,11 +223,14 @@ function generateJS(appInfo = {}) {
  * @returns {string} Injection snippet
  */
 function buildSnippet(appRef = 'app', appInfo = {}) {
-  const css = generateCSS(appInfo);
-  const js = generateJS(appInfo);
+  const rawCSS = generateCSS(appInfo);
+  const rawJS = generateJS(appInfo);
+  
+  const css = rawCSS.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\${/g, '\\${');
+  const js = rawJS.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\${/g, '\\${');
   
   return [
-    '/*=== BidiForge v3.0 (Universal) ===*/',
+    '/*=== BidiForge v3.0 (Universal Engine) — Developer: Jenzo0 ===*/',
     `const BIDIFORGE_CSS=\`${css}\`;`,
     `const BIDIFORGE_JS=\`${js}\`;`,
     `function __bidiForgeInject(wc){`,
@@ -258,11 +274,12 @@ function strip(code) {
   while (changed) {
     changed = false;
     const start = result.indexOf(startMarker);
-    const end = result.indexOf(endMarker);
-    
-    if (start !== -1 && end !== -1 && start < end) {
-      result = result.slice(0, start) + result.slice(end + endMarker.length);
-      changed = true;
+    if (start !== -1) {
+      const end = result.indexOf(endMarker, start);
+      if (end !== -1) {
+        result = result.substring(0, start) + result.substring(end + endMarker.length);
+        changed = true;
+      }
     }
   }
   
