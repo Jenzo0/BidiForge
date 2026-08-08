@@ -1,7 +1,7 @@
 {
   "name": "bidiforge",
-  "version": "3.0.0",
-  "description": "Universal BiDi Compatibility Layer for Electron",
+  "version": "3.9.0",
+  "description": "Universal BiDi Compatibility Layer for Electron — Patch any Electron app to render Arabic & RTL text flawlessly",
   "main": "index.js",
   "bin": {
     "bidiforge": "index.js"
@@ -11,12 +11,45 @@
     "scan": "node index.js scan",
     "patch": "node index.js patch",
     "rollback": "node index.js rollback",
+    "health": "node index.js health",
+    "watch": "node index.js watch",
     "cleanup": "node index.js cleanup",
     "test": "node tests/runner.js"
   },
+  "keywords": [
+    "bidi",
+    "rtl",
+    "arabic",
+    "electron",
+    "asar",
+    "patch",
+    "right-to-left",
+    "bidirectional",
+    "cli",
+    "tui",
+    "windows",
+    "desktop",
+    "discord",
+    "vscode",
+    "obsidian",
+    "i18n",
+    "localization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jenzo0/BidiForge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jenzo0/BidiForge/issues"
+  },
+  "homepage": "https://github.com/Jenzo0/BidiForge#readme",
   "dependencies": {
     "@electron/asar": "^3.2.14"
   },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": ["win32"],
   "author": "Jenzo0",
   "license": "MIT"
 }
