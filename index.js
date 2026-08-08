@@ -129,11 +129,12 @@ function relaunchAppProcess(appInfo) {
 }
 
 /**
- * Main patch workflow
+ * Main patch workflow with Safe Update Detection & Auto Repair
  * @param {string|object} target - Target app name, path, or app object
  * @param {boolean} relaunch - Whether to auto-relaunch process
+ * @param {boolean} force - Force re-patch even if hash matches
  */
-async function patch(target = null, relaunch = true) {
+async function patch(target = null, relaunch = true, force = false) {
   logger.init();
   
   let apps = detector.detectAll();
@@ -161,6 +162,20 @@ async function patch(target = null, relaunch = true) {
       console.log(`  ${C.red}✖ ASAR file not found for ${appInfo.name}${C.reset}`);
       results.failed.push(appInfo);
       continue;
+    }
+
+    const currentHash = detector.getFileHash(asarPath);
+    const updateCheck = status.checkSafeUpdateStatus(appInfo.path, currentHash, appInfo.version);
+
+    if (updateCheck.state === 'PATCHED_VERIFIED' && !force) {
+      console.log(`  ${C.green}✓ Already patched & up-to-date (SHA-256 hash verified).${C.reset}`);
+      results.skipped.push(appInfo);
+      continue;
+    }
+
+    if (updateCheck.state === 'APP_UPDATED') {
+      console.log(`  ${C.magenta}⚡ Safe Update Detection: Application update detected for ${appInfo.name}!${C.reset}`);
+      console.log(`  ${C.yellow}🔄 Auto-Repair triggered: Re-analyzing and patching updated ASAR structure...${C.reset}`);
     }
 
     killAppProcess(appInfo);
@@ -200,13 +215,10 @@ async function patch(target = null, relaunch = true) {
         throw new Error(`Validation failed: ${val.error}`);
       }
       
-      status.update(appInfo.path, {
-        name: appInfo.name,
-        status: 'PATCHED',
-        bidiForgeVersion: VERSION,
-        appVersion: appInfo.version,
-        entryPoint: inj.entryFile,
-        appRef: inj.appRef,
+      const newHash = detector.getFileHash(asarPath);
+      status.setPatched(appInfo.path, appInfo, {
+        hash: newHash,
+        backup: bak.backupPath,
       });
       
       results.patched.push(appInfo);
@@ -236,7 +248,7 @@ async function patch(target = null, relaunch = true) {
 }
 
 /**
- * Scan installed applications and display clean formatted table without clutter
+ * Scan installed applications and display clean formatted table with Safe Update Detection
  */
 function scan() {
   logger.init();
@@ -253,22 +265,26 @@ function scan() {
   console.log(`${C.bold}Discovered Compatible Applications:${C.reset}`);
   console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}`);
   
-  const registry = status.getAll() || {};
-  const appStatus = registry.apps || {};
-  
   apps.forEach((app, idx) => {
-    const key = app.path.toLowerCase();
-    const reg = appStatus[key] || appStatus[app.path] || {};
-    const st = reg.status || 'COMPATIBLE';
+    const asarPath = path.join(app.path, 'resources', 'app.asar');
+    const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
+    const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version);
     
     let tag = '';
-    if (st === 'PATCHED') {
+    let statusMsg = '';
+    
+    if (updateCheck.state === 'PATCHED_VERIFIED') {
       tag = `${C.yellow}[PATCHED]${C.reset}`;
+      statusMsg = `${C.green}✓ Up-to-date${C.reset}`;
+    } else if (updateCheck.state === 'APP_UPDATED') {
+      tag = `${C.magenta}[UPDATE DETECTED]${C.reset}`;
+      statusMsg = `${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
     } else {
       tag = `${C.green}[COMPATIBLE]${C.reset}`;
+      statusMsg = `${C.green}✓ Compatible${C.reset}`;
     }
     
-    console.log(`  ${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})  ${tag}  ${C.green}✓ Compatible${C.reset}`);
+    console.log(`  ${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})  ${tag}  ${statusMsg}`);
   });
   
   console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}\n`);
@@ -297,7 +313,7 @@ async function patchCustomPath(customPath) {
   }
   
   console.log(`${C.green}✓ Compatible Electron Structure Detected: ${appInfo.name} (v${appInfo.version})${C.reset}`);
-  await patch(appInfo);
+  await patch(appInfo, true, true);
 }
 
 /**
@@ -420,7 +436,7 @@ async function interactiveMenu() {
           if (ans.toUpperCase() === 'A') {
             const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL ${apps.length} applications? [Y/n]: ${C.reset}`)).trim();
             if (confirmAll.toLowerCase() !== 'n') {
-              await patch(null);
+              await patch(null, true, true);
             }
           } else if (ans) {
             const num = parseInt(ans, 10);
@@ -434,7 +450,7 @@ async function interactiveMenu() {
             if (targetApp) {
               const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name} (v${targetApp.version})? [Y/n]: ${C.reset}`)).trim();
               if (confirmSingle.toLowerCase() !== 'n') {
-                await patch(targetApp);
+                await patch(targetApp, true, true);
               }
             } else {
               console.log(`${C.red}[X] No matching application found for selection.${C.reset}`);
@@ -460,7 +476,7 @@ async function interactiveMenu() {
             const targetApp = apps[num - 1];
             const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
             if (confirmSingle.toLowerCase() !== 'n') {
-              await patch(targetApp);
+              await patch(targetApp, true, true);
             }
           }
         }
@@ -470,7 +486,7 @@ async function interactiveMenu() {
       case '3': {
         const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL discovered applications? [Y/n]: ${C.reset}`)).trim();
         if (confirmAll.toLowerCase() !== 'n') {
-          await patch(null);
+          await patch(null, true, true);
         }
         break;
       }
@@ -492,7 +508,7 @@ async function interactiveMenu() {
             apps.forEach((a, i) => console.log(`  ${C.cyan}[${i+1}]${C.reset} ${C.bold}${a.name}${C.reset} (v${a.version})`));
             const doPatch = (await askQuestion(rl, `\n${C.yellow}[?] Are you sure you want to patch ${apps[0].name}? [Y/n]: ${C.reset}`)).trim();
             if (doPatch.toLowerCase() !== 'n') {
-              await patch(apps[0]);
+              await patch(apps[0], true, true);
             }
           }
         }
@@ -604,7 +620,7 @@ async function interactiveMenu() {
       case 'repair':
       case '--repair':
         banner();
-        await patch(args[1] || null);
+        await patch(args[1] || null, true, true);
         break;
         
       case 'help':

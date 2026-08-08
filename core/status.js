@@ -1,6 +1,6 @@
 /**
- * BidiForge — Status Manager
- * Track patch status of applications
+ * BidiForge — Status Manager & Safe Update Detection Engine
+ * Track patch status of applications via SHA-256 hash manifest comparison
  * 
  * @version 3.0.0
  * @author Jenzo
@@ -63,6 +63,35 @@ function update(appPath, data) {
 }
 
 /**
+ * Safe Update Detection: Compare current ASAR hash & version against stored manifest
+ * @param {string} appPath - Application path
+ * @param {string} currentHash - Current ASAR SHA-256 hash
+ * @param {string} currentVersion - Current app version
+ * @returns {object} { state: 'NEW'|'PATCHED_VERIFIED'|'APP_UPDATED', message: string }
+ */
+function checkSafeUpdateStatus(appPath, currentHash, currentVersion = '') {
+  const existing = get(appPath);
+  if (!existing || existing.status !== 'PATCHED') {
+    return { state: 'NEW', message: 'Ready to patch' };
+  }
+
+  // Compare SHA-256 ASAR hash against stored manifest
+  if (existing.hash && currentHash && existing.hash === currentHash) {
+    return { state: 'PATCHED_VERIFIED', message: 'Already patched & verified' };
+  }
+
+  // Hash differs -> Vendor updated ASAR or file was modified externally!
+  return { 
+    state: 'APP_UPDATED', 
+    message: 'App updated by vendor (Auto-Repair recommended)',
+    oldHash: existing.hash,
+    newHash: currentHash,
+    oldVersion: existing.appVersion,
+    newVersion: currentVersion,
+  };
+}
+
+/**
  * Set app as patched
  */
 function setPatched(appPath, appInfo, patchInfo) {
@@ -102,14 +131,11 @@ function setUnsupported(appPath, appInfo, reason) {
 }
 
 /**
- * Check if needs re-patch (version changed)
+ * Check if app needs re-patching or auto-repair based on manifest hash comparison
  */
 function needsRepatch(appPath, currentHash) {
-  const existing = get(appPath);
-  if (!existing) return true;
-  if (existing.status !== 'PATCHED') return true;
-  if (existing.hash !== currentHash) return true;
-  return false;
+  const safeStatus = checkSafeUpdateStatus(appPath, currentHash);
+  return safeStatus.state !== 'PATCHED_VERIFIED';
 }
 
 module.exports = {
@@ -119,6 +145,7 @@ module.exports = {
   readRegistry: getAll,
   get,
   update,
+  checkSafeUpdateStatus,
   setPatched,
   setUnpatched,
   setUnsupported,
