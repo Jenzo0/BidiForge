@@ -69,7 +69,34 @@ async function extract(asarPath) {
 }
 
 /**
- * Repack workspace directory to ASAR atomically (packs to .tmp then renames)
+ * Safely rename/overwrite file handling Windows file locks with retries & copy fallback
+ */
+function safeRename(source, target, retries = 5, delay = 200) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (fs.existsSync(target)) {
+        try { fs.unlinkSync(target); } catch (_) {}
+      }
+      fs.renameSync(source, target);
+      return true;
+    } catch (err) {
+      if (i === retries - 1) {
+        try {
+          fs.copyFileSync(source, target);
+          try { fs.unlinkSync(source); } catch (_) {}
+          return true;
+        } catch (copyErr) {
+          throw new Error(`File locked by Windows process: ${err.message}`);
+        }
+      }
+      const end = Date.now() + delay;
+      while (Date.now() < end) {}
+    }
+  }
+}
+
+/**
+ * Repack workspace directory to ASAR safely (packs to .tmp then renames)
  * @param {string} dirPath - Source directory
  * @param {string} outputPath - Target ASAR path
  * @returns {object} Repack result
@@ -80,7 +107,7 @@ async function pack(dirPath, outputPath) {
   
   try {
     if (fs.existsSync(tmpOutputPath)) {
-      fs.unlinkSync(tmpOutputPath);
+      try { fs.unlinkSync(tmpOutputPath); } catch (_) {}
     }
 
     await asar.createPackage(dirPath, tmpOutputPath);
@@ -94,7 +121,7 @@ async function pack(dirPath, outputPath) {
       throw new Error('Repacked ASAR header validation failed');
     }
 
-    fs.renameSync(tmpOutputPath, outputPath);
+    safeRename(tmpOutputPath, outputPath);
     const stats = fs.statSync(outputPath);
     
     return {

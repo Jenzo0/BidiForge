@@ -135,6 +135,14 @@ test('shell.register generates valid Windows registry commands', () => {
   }
 });
 
+// Test Group 8: Border & Layout Alignment Test Suite
+console.log('');
+console.log('[8/8] Testing Border & Layout Alignment Engine...');
+test('border_test suite passes all 5 alignment assertions', () => {
+  const { execSync } = require('child_process');
+  execSync('node tests/border_test.js', { cwd: path.join(__dirname, '..'), stdio: 'pipe' });
+});
+
 console.log('');
 console.log('========================================');
 console.log(`RESULTS: ${passed} PASSED, ${failed} FAILED`);

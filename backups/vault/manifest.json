@@ -1,3 +1,59 @@
 {
-  "snapshots": []
+  "snapshots": [
+    {
+      "id": "snap_Heroic Games Launcher_2026-08-08T18-25-47-907Z",
+      "appName": "Heroic Games Launcher",
+      "appVersion": "2.22.0",
+      "appPath": "C:\\Program Files\\Heroic",
+      "asarPath": "C:\\Program Files\\Heroic\\resources\\app.asar",
+      "snapshotPath": "D:\\MyWork\\BidiForge\\backups\\vault\\snap_Heroic Games Launcher_2026-08-08T18-25-47-907Z.asar",
+      "hash": "1900eeb42f12a970c9c1f94b43a8cefa4ee44f05c3ee084ea61d3b37d17c685f",
+      "createdAt": "2026-08-08T18:25:48.883Z",
+      "sizeBytes": 104323388
+    },
+    {
+      "id": "snap_Heroic Games Launcher_2026-08-08T18-20-42-066Z",
+      "appName": "Heroic Games Launcher",
+      "appVersion": "2.22.0",
+      "appPath": "C:\\Program Files\\Heroic",
+      "asarPath": "C:\\Program Files\\Heroic\\resources\\app.asar",
+      "snapshotPath": "D:\\MyWork\\BidiForge\\backups\\vault\\snap_Heroic Games Launcher_2026-08-08T18-20-42-066Z.asar",
+      "hash": "1900eeb42f12a970c9c1f94b43a8cefa4ee44f05c3ee084ea61d3b37d17c685f",
+      "createdAt": "2026-08-08T18:20:42.824Z",
+      "sizeBytes": 104323388
+    },
+    {
+      "id": "snap_Heroic Games Launcher_2026-08-08T18-16-15-597Z",
+      "appName": "Heroic Games Launcher",
+      "appVersion": "2.22.0",
+      "appPath": "C:\\Program Files\\Heroic",
+      "asarPath": "C:\\Program Files\\Heroic\\resources\\app.asar",
+      "snapshotPath": "D:\\MyWork\\BidiForge\\backups\\vault\\snap_Heroic Games Launcher_2026-08-08T18-16-15-597Z.asar",
+      "hash": "1900eeb42f12a970c9c1f94b43a8cefa4ee44f05c3ee084ea61d3b37d17c685f",
+      "createdAt": "2026-08-08T18:16:16.031Z",
+      "sizeBytes": 104323388
+    },
+    {
+      "id": "snap_Heroic Games Launcher_2026-08-08T18-14-52-924Z",
+      "appName": "Heroic Games Launcher",
+      "appVersion": "2.22.0",
+      "appPath": "C:\\Program Files\\Heroic",
+      "asarPath": "C:\\Program Files\\Heroic\\resources\\app.asar",
+      "snapshotPath": "D:\\MyWork\\BidiForge\\backups\\vault\\snap_Heroic Games Launcher_2026-08-08T18-14-52-924Z.asar",
+      "hash": "1900eeb42f12a970c9c1f94b43a8cefa4ee44f05c3ee084ea61d3b37d17c685f",
+      "createdAt": "2026-08-08T18:14:53.832Z",
+      "sizeBytes": 104323388
+    },
+    {
+      "id": "snap_Antigravity IDE_2026-08-08T17-52-28-582Z",
+      "appName": "Antigravity IDE",
+      "appVersion": "2.5.0",
+      "appPath": "C:\\Users\\Jenzo\\AppData\\Local\\Programs\\antigravity",
+      "asarPath": "C:\\Users\\Jenzo\\AppData\\Local\\Programs\\antigravity\\resources\\app.asar",
+      "snapshotPath": "D:\\MyWork\\BidiForge\\backups\\vault\\snap_Antigravity IDE_2026-08-08T17-52-28-582Z.asar",
+      "hash": "792f9bbb2c02cc993510c9503345bc9fa512aa0aa6ce1f2471fdf5ce9a3d0e5a",
+      "createdAt": "2026-08-08T17:52:28.733Z",
+      "sizeBytes": 2040291
+    }
+  ]
 }

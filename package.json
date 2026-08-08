@@ -1,6 +1,6 @@
 {
   "name": "bidiforge",
-  "version": "3.9.0",
+  "version": "4.0.0",
   "description": "Universal BiDi Compatibility Layer for Electron — Patch any Electron app to render Arabic & RTL text flawlessly",
   "main": "index.js",
   "bin": {

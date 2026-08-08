@@ -3,7 +3,7 @@
 
 **Universal BiDi Compatibility Layer for Electron Applications**
 
-[![Version](https://img.shields.io/badge/Version-3.9.0-00d4ff?style=for-the-badge&logo=semanticrelease)](https://github.com/Jenzo0/BidiForge/releases)
+[![Version](https://img.shields.io/badge/Version-4.0.0-00d4ff?style=for-the-badge&logo=semanticrelease)](https://github.com/Jenzo0/BidiForge/releases)
 [![Node](https://img.shields.io/badge/Node.js-16+-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](LICENSE)
@@ -11,7 +11,41 @@
 
 *A powerful Windows CLI tool that patches Electron applications to render Arabic & RTL text flawlessly — in seconds, with zero breakage.*
 
-[**Getting Started**](#-quick-start) · [**Features**](#-features) · [**Usage**](#-usage) · [**Architecture**](#-architecture) · [**Contributing**](#-contributing)
+[**Getting Started**](#-quick-start) · [**Screenshots**](#-interface-screenshots) · [**Features**](#-features) · [**Usage**](#-usage) · [**Architecture**](#-architecture)
+
+</div>
+
+---
+
+## 📸 Interface Screenshots
+
+<div align="center">
+
+### 1. 🪬 Interactive Main Menu (Hermes TUI)
+![BidiForge Interactive Main Menu](docs/images/tui-main-menu.png)
+*الصفحة الرئيسية التفاعلية مع البانر العلوي وجميع الخيارات المتوفرة والتنقل السلس بالأسهم.*
+*Interactive Main Menu featuring responsive header, detected apps status, and keyboard-driven Hermes TUI card.*
+
+---
+
+### 2. ⚡ Confirmation & Multi-Stage Repack Engine
+![Confirm Patch & Safe Repack](docs/images/tui-confirm-patch.png)
+*شاشة التأكيد وتأمين عملية استخراج وإعادة تجميع الـ ASAR بآلية الأمان الحسابية الذكية بدون توقف.*
+*Confirmation screen demonstrating safe ASAR extraction, ES module syntax validation, and file-lock resilience.*
+
+---
+
+### 3. 🎨 Live Hot-Reload Watcher & Theme Engine
+![Live Hot-Reload Watcher](docs/images/tui-live-watcher.png)
+*محرك المراقبة الحية في وضع Cyberpunk Red الذي يراقب القواعد ويقوم بالتحديث الفوري عند التعديل.*
+*Live Hot-Reload Watcher engine running in Cyberpunk Red color theme, monitoring rules for real-time auto-patching.*
+
+---
+
+### 4. 🖱️ Windows Explorer Context Menu Integration
+![Windows Explorer Context Menu Integration](docs/images/windows-context-menu.png)
+*التكامل المباشر مع قائمة الزر الأيمن في الويندوز لإضافة خيار الباتش بنقرة واحدة لأي مجلد.*
+*One-click Windows Explorer right-click context menu integration for instant application patching.*
 
 </div>
 

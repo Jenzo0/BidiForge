@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes Agent Card TUI Engine (v3.9.0 Engine)
- * Dynamic Card Width (100% Solid Straight Vertical Borders), Asterisk-Free Back Options, Distinct Tip Footer, & Animated Fast Scan
+ * BidiForge — Hermes Agent Card TUI Engine (v4.0.0 Engine)
+ * Global Border & Layout Geometry Engine: Single-Page Viewport Control & Zero Scrollback Repetition
  * 
- * @version 3.9.0
+ * @version 4.0.0
  * @author Jenzo0
  */
 
@@ -13,15 +13,12 @@ const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 const DEFAULT_MIN_CARD_WIDTH = 78;
 
 /**
- * Smoothly refresh terminal screen in-place without buffer destruction or black screen
+ * Refresh terminal screen: Purges both visible viewport and scrollback buffer cleanly
+ * Eliminates repeated stacked cards when pressing arrow keys in Windows Terminal
  */
 function clearScreen() {
   if (process.stdout.isTTY) {
-    // \x1b[2J = erase entire visible screen (NOT scrollback — avoids black screen bug)
-    // \x1b[H  = move cursor to home position (0,0)
-    // This combo properly clears the full viewport on Windows Terminal
-    // without the infinite repetition bug from readline.cursorTo+clearScreenDown
-    process.stdout.write('\x1b[2J\x1b[H');
+    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
   } else {
     console.clear();
   }
@@ -46,34 +43,99 @@ function showCursor() {
 }
 
 /**
- * Strip ANSI escape codes from string
+ * Strip ANSI escape codes from string for accurate terminal width measurement
  */
 function stripAnsi(str) {
-  return (str || '').replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  return (str || '').replace(/\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?\x07/g, '');
+}
+
+/**
+ * Helper to test if a Unicode codepoint renders as 2 display columns in terminals
+ */
+function isWideCodePoint(code) {
+  if (code > 0xFFFF) return true;
+
+  // Miscellaneous Symbols (⚡ U+26A1, ⚙ U+2699, ⚠️ U+26A0, ⛔ U+26D4, ⚓ U+2693, ⛵ U+2685, ⚛ U+269B, ⚖ U+2696, etc.)
+  if (code >= 0x2600 && code <= 0x26FF) {
+    if ([0x26A1, 0x2699, 0x26A0, 0x26D4, 0x26BD, 0x26BE, 0x26C4, 0x26C5, 0x2693, 0x2685, 0x2696, 0x269B, 0x26FA, 0x26FD].includes(code)) return true;
+  }
+
+  // Dingbats (❌ U+274C, ❓ U+2753, ❗ U+2757, ⭕ U+2755, ✂ U+2702, ✈ U+2708, ✉ U+2709, ✏ U+270F, ✒ U+2712, ✳ U+2733, ✴ U+2734, ❄ U+2744, ❇ U+2747)
+  if (code >= 0x2700 && code <= 0x27BF) {
+    if ([0x274C, 0x2753, 0x2757, 0x2755, 0x2702, 0x2708, 0x2709, 0x270F, 0x2712, 0x2705, 0x274E, 0x2795, 0x2796, 0x2797, 0x27B0, 0x27BF, 0x2733, 0x2734, 0x2744, 0x2747].includes(code)) return true;
+  }
+
+  // Miscellaneous Symbols and Arrows (⭐ U+2B50, ⬛ U+2B1B, ⬜ U+2B1C)
+  if (code >= 0x2B00 && code <= 0x2BFF) {
+    if ([0x2B50, 0x2B1B, 0x2B1C, 0x2B55].includes(code)) return true;
+  }
+
+  // Miscellaneous Technical (⌛ U+231B, ⏳ U+23F3, ⏰ U+23F0, ⏱ U+23F1, ⏲ U+23F2)
+  if (code >= 0x2300 && code <= 0x23FF) {
+    if ([0x231B, 0x23F3, 0x23F0, 0x23F1, 0x23F2, 0x23F8, 0x23F9, 0x23FA, 0x23E9, 0x23EA, 0x23EB, 0x23EC].includes(code)) return true;
+  }
+
+  // CJK Ideographs / Fullwidth
+  if ((code >= 0x1100 && code <= 0x11FF) ||
+      (code >= 0x2E80 && code <= 0x9FFF) ||
+      (code >= 0xAC00 && code <= 0xD7A3) ||
+      (code >= 0xF900 && code <= 0xFAFF) ||
+      (code >= 0xFE30 && code <= 0xFE6F) ||
+      (code >= 0xFF01 && code <= 0xFF60) ||
+      (code >= 0xFFE0 && code <= 0xFFE6)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
  * Accurate terminal character width helper (Guarantees 100% straight vertical border lines)
- * Handles: Astral plane emoji (2 cols), BMP emoji+FE0F (2 cols), Variation Selector (0 cols)
+ * Handles: ANSI escape sequences, Astral plane emoji, BMP wide emoji, Variation Selectors, Zero-width joiners
  */
 function getVisualWidth(str) {
   const clean = stripAnsi(str);
   let w = 0;
   for (let i = 0; i < clean.length; i++) {
     const code = clean.codePointAt(i);
+    
+    // Combining marks & zero-width joiners
+    if (code === 0x200B || code === 0x200C || code === 0x200D || code === 0xFEFF) continue;
+    if ((code >= 0x0300 && code <= 0x036F) || (code >= 0xFE20 && code <= 0xFE2F)) continue;
+
     if (code > 0xFFFF) {
-      // Astral Plane emoji (🚀 📂 🛡 🩺 🔄 🖱 📦 🧹 🧪 🎨 etc.) — 2 display columns
       w += 2;
       i++; // Skip low surrogate
     } else if (code === 0xFE0F) {
-      // Variation Selector-16: makes previous BMP char render as emoji (2 cols)
-      // Previous char was counted as 1, but with FE0F it renders as 2 → add 1 extra
-      w += 1;
+      // Get actual previous codepoint even if previous char was a surrogate pair
+      let prevCode = 0;
+      if (i > 1 && clean.charCodeAt(i - 1) >= 0xDC00 && clean.charCodeAt(i - 1) <= 0xDFFF) {
+        prevCode = clean.codePointAt(i - 2);
+      } else if (i > 0) {
+        prevCode = clean.codePointAt(i - 1);
+      }
+      if (!isWideCodePoint(prevCode)) {
+        w += 1;
+      }
     } else {
-      w += 1;
+      w += isWideCodePoint(code) ? 2 : 1;
     }
   }
   return w;
+}
+
+/**
+ * Truncate a string to fit within maxVisWidth without breaking ANSI or Emoji
+ */
+function truncateToVisualWidth(str, maxVisWidth) {
+  const curVis = getVisualWidth(str);
+  if (curVis <= maxVisWidth) return str;
+
+  let clean = stripAnsi(str);
+  while (clean.length > 0 && getVisualWidth(clean + '…') > maxVisWidth) {
+    clean = clean.slice(0, -1);
+  }
+  return clean + '…';
 }
 
 /**
@@ -81,17 +143,20 @@ function getVisualWidth(str) {
  */
 function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_MIN_CARD_WIDTH) {
   const T = themeEngine.getTheme();
-  const visLeft = getVisualWidth(leftText);
-  const visRight = getVisualWidth(rightTag);
-  
-  if (rightTag) {
-    const totalVis = visLeft + visRight;
-    const padLen = Math.max(1, width - 4 - totalVis);
-    return `${T.border}│${T.reset} ${leftText}${' '.repeat(padLen)}${rightTag} ${T.border}│${T.reset}`;
-  } else {
-    const padLen = Math.max(0, width - 4 - visLeft);
-    return `${T.border}│${T.reset} ${leftText}${' '.repeat(padLen)} ${T.border}│${T.reset}`;
+  const innerWidth = width - 4; // 1 space left, 1 space right, 2 border chars = width - 4
+
+  let visRight = getVisualWidth(rightTag);
+  let visLeft = getVisualWidth(leftText);
+  let safeLeft = leftText;
+
+  if (visLeft + visRight > innerWidth) {
+    const maxLeftVis = Math.max(1, innerWidth - visRight - 1);
+    safeLeft = truncateToVisualWidth(leftText, maxLeftVis);
+    visLeft = getVisualWidth(safeLeft);
   }
+
+  const padLen = Math.max(0, innerWidth - visLeft - visRight);
+  return `${T.border}│${T.reset} ${safeLeft}${' '.repeat(padLen)}${rightTag} ${T.border}│${T.reset}`;
 }
 
 /**
@@ -114,11 +179,17 @@ function printHermesCard(rows = [], title = '', subtitle = '', targetWidth = nul
     maxContentWidth = Math.max(maxContentWidth, getVisualWidth(subtitle));
   }
 
-  const cardWidth = targetWidth || Math.max(DEFAULT_MIN_CARD_WIDTH, maxContentWidth + 6);
+  const termCols = (process.stdout.isTTY && process.stdout.columns) ? process.stdout.columns - 2 : 120;
+  const computedWidth = targetWidth || Math.max(DEFAULT_MIN_CARD_WIDTH, maxContentWidth + 6);
+  const cardWidth = Math.max(40, Math.min(computedWidth, termCols));
   
-  const visTitle = getVisualWidth(title);
+  // Safely truncate title to fit top bar width perfectly
+  const maxTitleVis = cardWidth - 7;
+  const safeTitle = truncateToVisualWidth(title, maxTitleVis);
+  const visTitle = getVisualWidth(safeTitle);
   const topBarLen = Math.max(2, cardWidth - 5 - visTitle);
-  const topLine = `${T.border}╭─ ${T.reset}${T.title}${T.bold}${title}${T.reset} ${T.border}${'─'.repeat(topBarLen)}╮${T.reset}`;
+
+  const topLine = `${T.border}╭─ ${T.reset}${T.title}${T.bold}${safeTitle}${T.reset} ${T.border}${'─'.repeat(topBarLen)}╮${T.reset}`;
   const botLine = `${T.border}╰${'─'.repeat(cardWidth - 2)}╯${T.reset}`;
 
   console.log(topLine);
@@ -142,18 +213,19 @@ function printHermesCard(rows = [], title = '', subtitle = '', targetWidth = nul
 /**
  * Print sleek vibrant footer prompt bar with distinct Tip styling
  */
-function printPromptBar(tipText = '') {
+function printPromptBar(tipText = '', width = DEFAULT_MIN_CARD_WIDTH) {
   const T = themeEngine.getTheme();
+  const dividerLen = Math.max(40, width);
   console.log('');
   if (tipText) {
     console.log(`${T.warning}${T.bold}✦ Tip:${T.reset} ${T.border}${tipText}${T.reset}`);
   }
-  console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+  console.log(`${T.border}${'─'.repeat(dividerLen)}${T.reset}`);
   console.log(`${T.title}${T.bold}❯${T.reset} ${T.dim}|${T.reset}`);
 }
 
 /**
- * Interactive Hermes Card Selector with Auto-Windowing Pagination & Full Logo Banner
+ * Interactive Hermes Card Selector with Auto-Windowing Pagination
  */
 function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn = null, subtitleText = '') {
   return new Promise(resolve => {
@@ -184,9 +256,10 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
     }
 
     function render() {
+      // Always purge scrollback and screen to prevent stacked card duplication on arrow keys
       clearScreen();
       
-      // Execute banner/header callback
+      // Execute banner/header callback ONLY if provided
       if (typeof headerFn === 'function') {
         headerFn();
       }
@@ -208,7 +281,7 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
         if (selectedIndex >= filtered.length) selectedIndex = 0;
 
         const termRows = process.stdout.rows || 24;
-        const maxVisible = Math.max(5, Math.min(12, termRows - 14));
+        const maxVisible = Math.max(5, Math.min(10, termRows - 16));
 
         let startIdx = 0;
         let endIdx = filtered.length;
@@ -488,6 +561,7 @@ module.exports = {
   showCursor,
   stripAnsi,
   getVisualWidth,
+  truncateToVisualWidth,
   beep,
   C: themeEngine.getTheme(),
 };

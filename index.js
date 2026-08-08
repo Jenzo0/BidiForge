@@ -27,7 +27,7 @@ const updater = require('./core/updater');
 const themeEngine = require('./ui/theme');
 const { promptSelect, promptMultiSelect, createSpinner, printHermesCard, formatCardRow, printPromptBar, clearScreen, beep } = require('./ui/menu');
 
-const VERSION = '3.9.0';
+const VERSION = '4.0.0';
 const DEVELOPER = 'Jenzo0';
 let _cachedAppsCount = null;
 
@@ -55,6 +55,14 @@ function refreshAppsCache() {
 function banner() {
   const T = themeEngine.getTheme();
   const appsCount = getCachedAppsCount();
+  const termRows = (process.stdout.isTTY && process.stdout.rows) ? process.stdout.rows : 24;
+
+  if (termRows < 30) {
+    console.log(`${T.title}${T.bold}  🪬  B I D I F O R G E   E N G I N E   v${VERSION}${T.reset}`);
+    console.log(`${T.border}── Developer: ${DEVELOPER} · Universal BiDi Layer · Apps: ${appsCount} Detected ──${T.reset}`);
+    console.log('');
+    return;
+  }
 
   console.log(`${T.title}${T.bold}  ██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${T.reset}`);
   console.log(`${T.title}${T.bold}  ██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${T.reset}`);
@@ -62,34 +70,7 @@ function banner() {
   console.log(`${T.title}${T.bold}  ██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ${T.reset}`);
   console.log(`${T.title}${T.bold}  ██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗${T.reset}`);
   console.log(`${T.title}${T.bold}  ╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝${T.reset}`);
-  console.log('');
-  console.log(`${T.border}─────── BidiForge Engine v${VERSION} · Developer: ${DEVELOPER} · Universal BiDi ───────${T.reset}`);
-  console.log('');
-
-  const logoArt = [
-    '       /\\       ',
-    '      /  \\      ',
-    '    /=======\\   ',
-    '   / | || | \\  ',
-    '  /_|_||_||_|_\\ ',
-    '      | || |    ',
-    '      |====|    ',
-    '     // || \\\\   ',
-  ];
-
-  const sysInfo = [
-    `${T.title}${T.bold}BidiForge Engine Overview${T.reset}`,
-    `${T.dim}Discovered Apps:${T.reset}  ${T.success}${appsCount} Electron Apps Detected${T.reset}`,
-    `${T.dim}BiDi Engine:${T.reset}       ${T.text}v${VERSION} Subtree MutationObserver${T.reset}`,
-    `${T.dim}Active Theme:${T.reset}      ${T.border}${themeEngine.getTheme().name || 'Cyberpunk Cyan'}${T.reset}`,
-  ];
-
-  for (let i = 0; i < Math.max(logoArt.length, sysInfo.length); i++) {
-    const left = logoArt[i] ? `${T.border}${logoArt[i]}${T.reset}` : '                ';
-    const right = sysInfo[i] || '';
-    console.log(`  ${left}   ${right}`);
-  }
-
+  console.log(`${T.border}── Developer: ${DEVELOPER} · Universal BiDi Compatibility Layer · Apps: ${appsCount} Detected ──${T.reset}`);
   console.log('');
 }
 
@@ -278,7 +259,7 @@ async function patch(target = null, relaunch = true, force = false) {
       const inj = injector.inject(tempDir, appInfo);
       if (!inj.success) throw new Error(`Inject failed: ${inj.error}`);
       
-      spinner.update('[5/6] Repacking ASAR package atomically...');
+      spinner.update('[5/6] Repacking & saving ASAR package safely...');
       const packRes = await asar.pack(tempDir, asarPath);
       if (!packRes.success) {
         backup.rollback(appInfo.path);
@@ -341,7 +322,7 @@ function getAppSelectOptions(apps) {
     if (updateCheck.state === 'PATCHED_VERIFIED') {
       tag = `${T.success}✓ Compatible${T.reset}  ${T.border}★ (Patched)${T.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
-      tag = `${T.accent}[VENDOR UPDATE DETECTED]${T.reset}  ${T.warning}⚡ Auto-Repair Ready${T.reset}`;
+      tag = `${T.accent}[VENDOR UPDATE DETECTED]${T.reset} ${T.warning}⚡Auto-Repair Ready${T.reset}`;
     } else {
       tag = `${T.success}✓ Compatible${T.reset}`;
     }
@@ -378,7 +359,7 @@ async function scan() {
   const appChoices = getAppSelectOptions(apps);
   appChoices.push({ label: '↩ Back to Main Menu', tag: '' });
 
-  const selectedIdx = await promptSelect(appChoices, '⚙️ Discovered Applications & Interactive Selector', banner, `Current: ${apps.length} Electron Applications Discovered`);
+  const selectedIdx = await promptSelect(appChoices, '⚙️ Discovered Applications & Interactive Selector', null, `Current: ${apps.length} Electron Applications Discovered`);
   
   if (selectedIdx >= 0 && selectedIdx < apps.length) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -451,7 +432,7 @@ async function handleAppSelection(rl, app) {
       '• Skip Patching For Now',
       '↩ Cancel / Back to Main Menu',
     ];
-    const idx = await promptSelect(choices, `⚙️ Update Action: ${app.name}`, banner);
+    const idx = await promptSelect(choices, `⚙️ Update Action: ${app.name}`, null);
     if (idx === 0) {
       await patch(app, true, true);
     }
@@ -471,7 +452,7 @@ async function handleAppSelection(rl, app) {
       '🛡️ Rollback / Remove Patch (Restore original app backup)',
       '↩ Cancel / Back to Main Menu',
     ];
-    const subChoice = await promptSelect(choices, `⚙️ Patched App Options: ${app.name}`, banner);
+    const subChoice = await promptSelect(choices, `⚙️ Patched App Options: ${app.name}`, null);
     if (subChoice === 0) {
       await patch(app, true, true);
     } else if (subChoice === 1) {
@@ -490,7 +471,7 @@ async function handleAppSelection(rl, app) {
     `🚀 Yes, apply BiDi patch to ${app.name}`,
     `↩ Cancel & Back to Main Menu`,
   ];
-  const confirmIdx = await promptSelect(choices, `⚙️ Confirm Patch: ${app.name}`, banner);
+  const confirmIdx = await promptSelect(choices, `⚙️ Confirm Patch: ${app.name}`, null);
   if (confirmIdx === 0) {
     await patch(app, true, false);
   }
@@ -591,7 +572,7 @@ async function handleThemeSelection() {
   }));
   choices.push({ label: '↩ Back to Main Menu', tag: '' });
 
-  const idx = await promptSelect(choices, '🎨 Theme Switcher — Select Color Palette', banner);
+  const idx = await promptSelect(choices, '🎨 Theme Switcher — Select Color Palette', null);
   if (idx >= 0 && idx < themes.length) {
     themeEngine.setTheme(themes[idx].key);
     console.log(`\n  ${themeEngine.getTheme().success}✓ Theme changed to ${themes[idx].name}!${themeEngine.getTheme().reset}\n`);
@@ -612,7 +593,7 @@ function askQuestion(rl, query) {
 async function interactiveMenu() {
   const menuOptions = [
     '⚡ Fast Scan & List Compatible Applications',
-    '⚙️ Select Applications to Patch (Multi-Checkboxes [x])',
+    '⚙️ Select Applications to Patch',
     '🚀 Patch ALL Discovered Applications',
     '🔍 Search Application by Name',
     '📂 Patch Custom Application Path (Enter Path)',
@@ -648,7 +629,7 @@ async function interactiveMenu() {
         const apps = detector.detectAll();
         if (apps.length > 0) {
           const appChoices = getAppSelectOptions(apps);
-          const selectedApps = await promptMultiSelect(appChoices, '⚙️ Select Applications to Patch', banner);
+          const selectedApps = await promptMultiSelect(appChoices, '⚙️ Select Applications to Patch', null);
           if (selectedApps.length > 0) {
             await patch(selectedApps, true, false);
           }
@@ -705,7 +686,7 @@ async function interactiveMenu() {
         const apps = detector.detectAll();
         if (apps.length > 0) {
           const appChoices = getAppSelectOptions(apps);
-          const appIdx = await promptSelect(appChoices, '⚙️ Select Application for Live Hot-Reload Watcher', banner);
+          const appIdx = await promptSelect(appChoices, '⚙️ Select Application for Live Hot-Reload Watcher', null);
           if (appIdx >= 0 && appIdx < apps.length) {
             watcher.watch(apps[appIdx]);
             return;
@@ -751,7 +732,7 @@ async function interactiveMenu() {
         break;
     }
     
-    if (running) {
+    if (running && [6, 9, 10, 11].includes(selectedIdx)) {
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       await askQuestion(rl, `\n${themeEngine.getTheme().dim}Press Enter to return to main menu...${themeEngine.getTheme().reset}`);
       rl.close();

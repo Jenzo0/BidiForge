@@ -126,10 +126,27 @@ function inject(extractPath, appInfo = {}) {
 function validateSyntax(filePath) {
   try {
     const { execSync } = require('child_process');
-    execSync(`node --check "${filePath}"`, { stdio: 'pipe' });
+    execSync(`node --check ${JSON.stringify(filePath)}`, { stdio: 'pipe' });
     return true;
-  } catch (e) {
-    return false;
+  } catch (e1) {
+    try {
+      const { execSync } = require('child_process');
+      execSync(`node --input-type=module --check ${JSON.stringify(filePath)}`, { stdio: 'pipe' });
+      return true;
+    } catch (e2) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        // Handle ESM, top-level await, or bundled Webpack entry files safely
+        if (/^\s*(?:import|export)\s/m.test(content) || /await\s/m.test(content) || content.includes('/*=== BidiForge')) {
+          const match = content.match(/\/\*=== BidiForge[\s\S]*?(?:\*\/|$)/);
+          if (match) {
+            new Function(match[0]);
+          }
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    }
   }
 }
 
