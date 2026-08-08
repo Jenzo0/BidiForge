@@ -17,8 +17,11 @@ const DEFAULT_MIN_CARD_WIDTH = 78;
  */
 function clearScreen() {
   if (process.stdout.isTTY) {
-    readline.cursorTo(process.stdout, 0, 0);
-    readline.clearScreenDown(process.stdout);
+    // \x1b[2J = erase entire visible screen (NOT scrollback — avoids black screen bug)
+    // \x1b[H  = move cursor to home position (0,0)
+    // This combo properly clears the full viewport on Windows Terminal
+    // without the infinite repetition bug from readline.cursorTo+clearScreenDown
+    process.stdout.write('\x1b[2J\x1b[H');
   } else {
     console.clear();
   }

@@ -29,13 +29,32 @@ const { promptSelect, promptMultiSelect, createSpinner, printHermesCard, formatC
 
 const VERSION = '3.9.0';
 const DEVELOPER = 'Jenzo0';
+let _cachedAppsCount = null;
+
+/**
+ * Get cached count of discovered apps (scan only once per session)
+ */
+function getCachedAppsCount() {
+  if (_cachedAppsCount === null) {
+    _cachedAppsCount = detector.detectAll().length;
+  }
+  return _cachedAppsCount;
+}
+
+/**
+ * Invalidate cached apps count (call after a new scan)
+ */
+function refreshAppsCache() {
+  _cachedAppsCount = detector.detectAll().length;
+  return _cachedAppsCount;
+}
 
 /**
  * Print Full ASCII Hero Banner with Split Logo Art & System Overview
  */
 function banner() {
   const T = themeEngine.getTheme();
-  const appsCount = detector.detectAll().length;
+  const appsCount = getCachedAppsCount();
 
   console.log(`${T.title}${T.bold}  ██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${T.reset}`);
   console.log(`${T.title}${T.bold}  ██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${T.reset}`);
@@ -349,8 +368,8 @@ async function scan() {
   const spinner = createSpinner('Scanning Electron Applications...');
   await new Promise(r => setTimeout(r, 600));
   const apps = detector.detectAll();
+  _cachedAppsCount = apps.length; // Update cache after fresh scan
   spinner.succeed(`Found ${apps.length} Electron Application(s)!`);
-  await new Promise(r => setTimeout(r, 400));
   
   if (apps.length === 0) {
     console.log(`${T.warning}No Electron applications discovered on this system.${T.reset}`);
