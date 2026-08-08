@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.5 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.6 Hermes-Agent TUI Engine)
  * Universal BiDi Compatibility Layer for Electron
- * Full Terminal Width Cyberpunk Boxes, Erased Scrollback Buffer, Arrow Key Cursor Navigation ONLY (No numbers)
+ * Hermes Agent Layout: Split Hero Logo/Stats, Sleek Line Dividers, Zero Box Side Walls, & Erased Scrollback Buffer
  * 
- * @version 3.5.0
+ * @version 3.6.0
  * @author Jenzo0
  */
 
@@ -25,31 +25,53 @@ const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
 const updater = require('./core/updater');
 const themeEngine = require('./ui/theme');
-const { promptSelect, promptMultiSelect, createSpinner, printBoxContainer, formatBoxRow, clearScreen, beep } = require('./ui/menu');
+const { promptSelect, promptMultiSelect, createSpinner, formatRow, printHeader, printFooter, clearScreen, beep } = require('./ui/menu');
 
-const VERSION = '3.5.0';
+const VERSION = '3.6.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
- * Print centered Cyberpunk ASCII logo banner box with 100% pixel-perfect symmetry
+ * Print Hermes Agent-inspired Hero Banner with Split Logo Art & System Overview
  */
 function banner() {
   const T = themeEngine.getTheme();
-  const cols = (process.stdout && process.stdout.columns) ? process.stdout.columns : 80;
-  const boxWidth = 70;
-  const pad = ' '.repeat(Math.max(0, Math.floor((cols - boxWidth) / 2)));
+  const appsCount = detector.detectAll().length;
 
+  console.log(`${T.title}${T.bold}  ██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${T.reset}`);
+  console.log(`${T.title}${T.bold}  ██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${T.reset}`);
+  console.log(`${T.title}${T.bold}  ██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ${T.reset}`);
+  console.log(`${T.title}${T.bold}  ██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ${T.reset}`);
+  console.log(`${T.title}${T.bold}  ██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗${T.reset}`);
+  console.log(`${T.title}${T.bold}  ╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝${T.reset}`);
   console.log('');
-  console.log(pad + `${T.border}╔════════════════════════════════════════════════════════════════════╗${T.reset}`);
-  console.log(pad + `${T.border}║ ${T.title}${T.bold}██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗ ${T.reset}${T.border}║${T.reset}`);
-  console.log(pad + `${T.border}║ ${T.title}${T.bold}██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝ ${T.reset}${T.border}║${T.reset}`);
-  console.log(pad + `${T.border}║ ${T.title}${T.bold}██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗   ${T.reset}${T.border}║${T.reset}`);
-  console.log(pad + `${T.border}║ ${T.title}${T.bold}██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝   ${T.reset}${T.border}║${T.reset}`);
-  console.log(pad + `${T.border}║ ${T.title}${T.bold}██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗ ${T.reset}${T.border}║${T.reset}`);
-  console.log(pad + `${T.border}║ ${T.title}${T.bold}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ${T.reset}${T.border}║${T.reset}`);
-  console.log(pad + `${T.border}║                ${T.text}${T.bold}Universal BiDi Compatibility Layer v${VERSION}${T.reset}${T.border}            ║${T.reset}`);
-  console.log(pad + `${T.border}║                            ${T.title}Developer: ${DEVELOPER}${T.reset}${T.border}                       ║${T.reset}`);
-  console.log(pad + `${T.border}╚════════════════════════════════════════════════════════════════════╝${T.reset}`);
+  console.log(`${T.border}─────── BidiForge Engine v${VERSION} · Developer: ${DEVELOPER} · Universal BiDi ───────${T.reset}`);
+  console.log('');
+
+  const logoArt = [
+    '       /\\       ',
+    '      /  \\      ',
+    '    /=======\\   ',
+    '   / | || | \\  ',
+    '  /_|_||_||_|_\\ ',
+    '      | || |    ',
+    '      |====|    ',
+    '     // || \\\\   ',
+  ];
+
+  const sysInfo = [
+    `${T.title}${T.bold}BidiForge Engine Overview${T.reset}`,
+    `${T.dim}Discovered Apps:${T.reset}  ${T.success}${appsCount} Electron Apps Detected${T.reset}`,
+    `${T.dim}BiDi Engine:${T.reset}       ${T.text}v${VERSION} Subtree MutationObserver${T.reset}`,
+    `${T.dim}Active Theme:${T.reset}      ${T.border}${themeEngine.getTheme().name || 'Cyberpunk Cyan'}${T.reset}`,
+    `${T.dim}Developer:${T.reset}         ${T.title}${DEVELOPER}${T.reset}`,
+  ];
+
+  for (let i = 0; i < Math.max(logoArt.length, sysInfo.length); i++) {
+    const left = logoArt[i] ? `${T.border}${logoArt[i]}${T.reset}` : '                ';
+    const right = sysInfo[i] || '';
+    console.log(`  ${left}   ${right}`);
+  }
+
   console.log('');
 }
 
@@ -276,19 +298,18 @@ async function patch(target = null, relaunch = true, force = false) {
     }
   }
   
-  const summaryRows = [
-    { label: `${T.success}✓ Patched Applications:${T.reset}`, tag: `${T.bold}${results.patched.length}${T.reset}` },
-    { label: `${T.warning}• Skipped (Patched):${T.reset}`, tag: `${T.bold}${results.skipped.length}${T.reset}` },
-    { label: `${T.danger}✖ Failed Applications:${T.reset}`, tag: `${T.bold}${results.failed.length}${T.reset}` },
-  ];
-  printBoxContainer(summaryRows, 'SUMMARY REPORT', 'All patched applications are now active with Arabic BiDi support');
+  printHeader('SUMMARY REPORT');
+  console.log(formatRow(`${T.success}✓ Patched Applications:${T.reset}`, `${T.bold}${results.patched.length}${T.reset}`));
+  console.log(formatRow(`${T.warning}• Skipped (Patched):${T.reset}`, `${T.bold}${results.skipped.length}${T.reset}`));
+  console.log(formatRow(`${T.danger}✖ Failed Applications:${T.reset}`, `${T.bold}${results.failed.length}${T.reset}`));
+  printFooter('All patched applications are now active with Arabic BiDi support');
   console.log('');
   
   return results;
 }
 
 /**
- * Scan installed applications and display full-width Cyberpunk Boxed table with status badges
+ * Scan installed applications and display clean divider table with status badges (No box side walls)
  */
 function scan() {
   logger.init();
@@ -303,8 +324,9 @@ function scan() {
     return apps;
   }
   
-  const rows = [];
-  apps.forEach((app, idx) => {
+  printHeader('DISCOVERED ELECTRON APPLICATIONS & STATUS');
+  
+  apps.forEach((app) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
     const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
@@ -319,10 +341,10 @@ function scan() {
     }
     
     const label = `${T.text}${T.bold}${app.name}${T.reset} (v${app.version})`;
-    rows.push({ label, tag: statusTag });
+    console.log(formatRow(label, statusTag));
   });
   
-  printBoxContainer(rows, 'DISCOVERED ELECTRON APPLICATIONS & STATUS', 'Select Option in main menu to interactively patch applications');
+  printFooter('Select Option in main menu to interactively patch applications');
   console.log('');
   return apps;
 }
@@ -378,17 +400,17 @@ function runHealthInspection(target = null) {
     const report = inspector.inspectApp(app);
     const scoreColor = report.score >= 80 ? T.success : (report.score >= 50 ? T.warning : T.danger);
 
-    const rows = [
-      { label: `Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}`, tag: `Status: ${scoreColor}${report.status}${T.reset}` },
-      { label: `Inspected At: ${new Date(report.inspectedAt).toLocaleString()}` },
-    ];
+    printHeader(`HEALTH REPORT: ${report.appName} (v${report.appVersion})`);
+    console.log(`  Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}  —  Status: ${scoreColor}${report.status}${T.reset}`);
+    console.log(`  Inspected At: ${new Date(report.inspectedAt).toLocaleString()}`);
+    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
 
     report.checks.forEach(check => {
       const symbol = check.passed ? `${T.success}✓${T.reset}` : `${T.danger}✖${T.reset}`;
-      rows.push({ label: `${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}` });
+      console.log(`  ${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}`);
     });
 
-    printBoxContainer(rows, `HEALTH REPORT: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection');
+    printFooter('High score indicates optimal Arabic RTL injection');
     console.log('');
   }
 }
@@ -595,7 +617,7 @@ async function interactiveMenu() {
 
   let running = true;
   while (running) {
-    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.5 Main Menu — Advanced TUI Engine:', banner);
+    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.6 Main Menu — Hermes-Agent TUI Engine:', banner);
     
     if (selectedIdx === -1 || selectedIdx === 13) {
       running = false;
@@ -696,11 +718,12 @@ async function interactiveMenu() {
       case 9: { // Vault Manager
         banner();
         const snapshots = vault.listSnapshots();
-        const rows = snapshots.map((s) => ({
-          label: `${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`,
-          tag: `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`,
-        }));
-        printBoxContainer(rows, `VAULT SNAPSHOT REGISTRY (${snapshots.length} snapshots)`, 'Use "node index.js vault restore <id>" to restore any snapshot');
+        printHeader(`VAULT SNAPSHOT REGISTRY (${snapshots.length} snapshots)`);
+        snapshots.forEach((s) => {
+          const label = `${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`;
+          console.log(formatRow(label, `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`));
+        });
+        printFooter('Use "node index.js vault restore <id>" to restore any snapshot');
         break;
       }
 
