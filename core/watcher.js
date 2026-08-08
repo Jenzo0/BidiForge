@@ -1,14 +1,13 @@
 /**
- * BidiForge — Live Hot-Reload Watcher (v3.1 Engine)
+ * BidiForge — Live Hot-Reload Watcher (v3.2 Engine)
  * Watches rules/ and profiles/ directories and hot-reloads BiDi patches on target applications
  * 
- * @version 3.1.0
+ * @version 3.2.0
  * @author Jenzo0
  */
 
 const fs = require('fs');
 const path = require('path');
-const { patch } = require('../index');
 
 /**
  * Start watching rules and profiles for live hot-reload
@@ -29,6 +28,7 @@ function watch(targetApp, callback = null) {
       console.log(`\n⚡ [HOT-RELOAD] File change detected: ${filename || 'rule update'}`);
       console.log('🔄 Re-compiling and applying live BiDi engine patch...');
       try {
+        const { patch } = require('../index');
         await patch(targetApp, true, true);
         if (typeof callback === 'function') callback(null, { filename });
       } catch (e) {

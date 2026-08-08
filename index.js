@@ -375,7 +375,7 @@ async function handleAppSelection(rl, app) {
       '• Skip Patching For Now',
       '* Cancel / Back to Main Menu',
     ];
-    const idx = await promptSelect(choices, `Select action for ${app.name}:`);
+    const idx = await promptSelect(choices, `Select action for ${app.name}:`, banner);
     if (idx === 0) {
       await patch(app, true, true);
     }
@@ -395,7 +395,7 @@ async function handleAppSelection(rl, app) {
       '🛡️ Rollback / Remove Patch (Restore original app backup)',
       '* Cancel / Back to Main Menu',
     ];
-    const subChoice = await promptSelect(choices, `Select action for ${app.name}:`);
+    const subChoice = await promptSelect(choices, `Select action for ${app.name}:`, banner);
     if (subChoice === 0) {
       await patch(app, true, true);
     } else if (subChoice === 1) {
@@ -414,7 +414,7 @@ async function handleAppSelection(rl, app) {
     `🚀 Yes, apply BiDi patch to ${app.name}`,
     `* Cancel & Back to Main Menu`,
   ];
-  const confirmIdx = await promptSelect(choices, `Confirm patching ${app.name} (v${app.version}):`);
+  const confirmIdx = await promptSelect(choices, `Confirm patching ${app.name} (v${app.version}):`, banner);
   if (confirmIdx === 0) {
     await patch(app, true, false);
   }
@@ -508,8 +508,6 @@ function askQuestion(rl, query) {
  * Interactive Menu Workflow with Arrow Key Keyboard Navigation (↑/↓/Enter)
  */
 async function interactiveMenu() {
-  banner();
-
   const menuOptions = [
     '⚡ [1] Fast Scan & List Compatible Applications',
     '⚙️ [2] Select Application to Patch (Interactive)',
@@ -528,7 +526,7 @@ async function interactiveMenu() {
 
   let running = true;
   while (running) {
-    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.2 Main Menu — Navigate with ↑/↓ and press Enter:');
+    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.2 Main Menu — Navigate with ↑/↓ and press Enter:', banner);
     
     if (selectedIdx === -1 || selectedIdx === 12) {
       running = false;
@@ -538,13 +536,14 @@ async function interactiveMenu() {
     
     switch (selectedIdx) {
       case 0: { // Scan
+        banner();
         const apps = scan();
         if (apps.length > 0) {
           const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
           appChoices.push('🚀 Patch ALL Discovered Applications');
           appChoices.push('* Back to Main Menu');
 
-          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:');
+          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
             await handleAppSelection(rl, apps[appIdx]);
@@ -557,11 +556,12 @@ async function interactiveMenu() {
       }
         
       case 1: { // Select App
+        banner();
         const apps = scan();
         if (apps.length > 0) {
           const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
           appChoices.push('* Back to Main Menu');
-          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:');
+          const appIdx = await promptSelect(appChoices, 'Select Application to Patch:', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
             await handleAppSelection(rl, apps[appIdx]);
@@ -572,11 +572,13 @@ async function interactiveMenu() {
       }
       
       case 2: { // Patch ALL
+        banner();
         await patch(null, true, false);
         break;
       }
         
       case 3: { // Search
+        banner();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
         const nameQuery = (await askQuestion(rl, `\n${C.yellow}Enter application name to search (e.g. discord, slack, obsidian): ${C.reset}`)).trim();
         if (nameQuery) {
@@ -592,6 +594,7 @@ async function interactiveMenu() {
       }
       
       case 4: { // Custom Path
+        banner();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
         const customPath = (await askQuestion(rl, `\n${C.yellow}Enter direct application folder or ASAR file path: ${C.reset}`)).trim();
         if (customPath) await patchCustomPath(customPath);
@@ -600,6 +603,7 @@ async function interactiveMenu() {
       }
       
       case 5: { // Rollback
+        banner();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
         const appName = (await askQuestion(rl, `\n${C.yellow}Enter application name or path to rollback: ${C.reset}`)).trim();
         if (appName) rollbackApp(appName);
@@ -612,10 +616,11 @@ async function interactiveMenu() {
         break;
 
       case 7: { // Watch
+        banner();
         const apps = scan();
         if (apps.length > 0) {
           const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
-          const appIdx = await promptSelect(appChoices, 'Select Application for Live Hot-Reload Watcher:');
+          const appIdx = await promptSelect(appChoices, 'Select Application for Live Hot-Reload Watcher:', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
             watcher.watch(apps[appIdx]);
             return;
@@ -625,6 +630,7 @@ async function interactiveMenu() {
       }
 
       case 8: { // Shell Integration
+        banner();
         const regRes = shell.register();
         if (regRes.success) {
           console.log(`\n${C.green}✓ ${regRes.message}${C.reset}`);
@@ -636,6 +642,7 @@ async function interactiveMenu() {
       }
 
       case 9: { // Vault Manager
+        banner();
         const snapshots = vault.listSnapshots();
         console.log(`\n${C.cyan}• Vault Snapshot Registry (${snapshots.length} snapshots)${C.reset}\n`);
         snapshots.forEach((s, idx) => {

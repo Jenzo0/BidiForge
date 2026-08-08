@@ -29,9 +29,10 @@ const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
  * Interactive Arrow-Key Menu Selector (↑ Up / ↓ Down / Enter / Esc)
  * @param {Array} options - List of string options or objects { label, value, detail }
  * @param {string} promptText - Prompt header title
+ * @param {function} headerFn - Optional banner/header function to call on render
  * @returns {Promise<number>} Selected index
  */
-function promptSelect(options, promptText = 'Select an option using ↑/↓ arrows and press Enter:') {
+function promptSelect(options, promptText = 'Select an option using ↑/↓ arrows and press Enter:', headerFn = null) {
   return new Promise(resolve => {
     let selected = 0;
     
@@ -47,6 +48,9 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
 
     function render() {
       console.clear();
+      if (typeof headerFn === 'function') {
+        headerFn();
+      }
       console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
       console.log(` ${C.bold}${promptText}${C.reset}`);
       console.log(`${C.dim}  Use ↑/↓ Arrow Keys to navigate, Enter to select, Esc to cancel${C.reset}`);
