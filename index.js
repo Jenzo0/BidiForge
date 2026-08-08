@@ -55,6 +55,37 @@ function banner() {
 }
 
 /**
+ * Check if target application process is currently running
+ * @param {object} appInfo - Application metadata
+ * @returns {boolean} True if running
+ */
+function isAppRunning(appInfo) {
+  if (!appInfo || !appInfo.name) return false;
+  let exeNames = [];
+  const baseName = appInfo.name.replace(/[^a-zA-Z0-9_-]/g, '');
+  exeNames.push(`${baseName}.exe`);
+  exeNames.push(`${appInfo.name}.exe`);
+  
+  if (/discord/i.test(appInfo.name)) exeNames.push('Discord.exe');
+  if (/opencode/i.test(appInfo.name)) exeNames.push('OpenCode.exe', '@opencode-aidesktop.exe');
+  if (/antigravity/i.test(appInfo.name)) exeNames.push('Antigravity.exe');
+  if (/obsidian/i.test(appInfo.name)) exeNames.push('Obsidian.exe');
+  if (/vscode|code/i.test(appInfo.name)) exeNames.push('Code.exe');
+  if (/cursor/i.test(appInfo.name)) exeNames.push('Cursor.exe');
+  if (/slack/i.test(appInfo.name)) exeNames.push('Slack.exe');
+
+  for (const exe of exeNames) {
+    try {
+      const output = execSync(`tasklist /FI "IMAGENAME eq ${exe}"`, { stdio: 'pipe' }).toString();
+      if (output.toLowerCase().includes(exe.toLowerCase())) {
+        return true;
+      }
+    } catch (_) {}
+  }
+  return false;
+}
+
+/**
  * Kill running application process to release ASAR file locks
  * @param {object} appInfo - Application metadata
  * @returns {boolean} True if a process was terminated
@@ -174,7 +205,7 @@ async function patch(target = null, relaunch = true, force = false) {
     const updateCheck = status.checkSafeUpdateStatus(appInfo.path, currentHash, appInfo.version, asarPath);
 
     if (updateCheck.state === 'PATCHED_VERIFIED' && !force) {
-      console.log(`  ${C.green}YES → Already patched (SHA-256 hash & file marker verified)${C.reset}\n`);
+      console.log(`  ${C.yellow}YES → Already patched (SHA-256 hash & file marker verified)${C.reset}\n`);
       results.skipped.push(appInfo);
       continue;
     }
@@ -254,7 +285,7 @@ async function patch(target = null, relaunch = true, force = false) {
 }
 
 /**
- * Scan installed applications and display clean formatted table with direct ASAR patch inspection
+ * Scan installed applications and display clean formatted table with direct ASAR patch inspection & new colors
  */
 function scan() {
   logger.init();
@@ -279,9 +310,9 @@ function scan() {
     let statusDisplay = '';
     
     if (updateCheck.state === 'PATCHED_VERIFIED') {
-      statusDisplay = `${C.green}✓ Compatible (Patched)${C.reset}`;
+      statusDisplay = `${C.green}✓ Compatible${C.reset}  ${C.cyan}★ (Patched)${C.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
-      statusDisplay = `${C.magenta}[UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
+      statusDisplay = `${C.magenta}[VENDOR UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
     } else {
       statusDisplay = `${C.green}✓ Compatible${C.reset}`;
     }
@@ -294,27 +325,67 @@ function scan() {
 }
 
 /**
- * Handle selection of an already patched application
+ * Unified application selection handler with pre-patch checks, vendor update checks, process close, & relaunch
  * @param {object} rl - Readline interface
  * @param {object} app - Application object
- * @param {object} updateCheck - Status check object
  */
-async function handleAlreadyPatchedApp(rl, app, updateCheck) {
-  console.log(`\n  ${C.green}${C.bold}YES → Already patched${C.reset}`);
-  console.log(`  ${C.white}${app.name}${C.reset} (v${app.version}) is currently patched & verified.`);
-  if (updateCheck && updateCheck.patchedAt) {
-    console.log(`  ${C.dim}Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
-  }
-  console.log('');
-  console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Force Re-patch (Apply fresh BiDi patch)${C.reset}`);
-  console.log(`  ${C.red}[2]${C.reset} ${C.red}Rollback / Remove Patch (Restore original app backup)${C.reset}`);
-  console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Cancel / Back to Main Menu${C.reset}\n`);
+async function handleAppSelection(rl, app) {
+  if (!app) return;
   
-  const subChoice = (await askQuestion(rl, `${C.yellow}Select an action [1-2, *]: ${C.reset}`)).trim();
-  if (subChoice === '1') {
-    await patch(app, true, true);
-  } else if (subChoice === '2') {
-    rollbackApp(app.name);
+  const asarPath = path.join(app.path, 'resources', 'app.asar');
+  const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
+  const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
+
+  // Check 1: Vendor Update Detection
+  if (updateCheck.state === 'APP_UPDATED') {
+    console.log(`\n  ${C.magenta}${C.bold}⚡ Vendor Application Update Detected!${C.reset}`);
+    console.log(`  ${C.white}${app.name}${C.reset} was updated by vendor (${updateCheck.oldVersion ? 'v' + updateCheck.oldVersion : 'older'} ➔ v${app.version}).`);
+    if (updateCheck.patchedAt) {
+      console.log(`  ${C.dim}Previous Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
+    }
+    console.log('');
+    console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Run Auto-Repair & Re-patch Updated Version (Recommended)${C.reset}`);
+    console.log(`  ${C.yellow}[2]${C.reset} ${C.dim}Skip Patching For Now${C.reset}`);
+    console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Back to Main Menu${C.reset}\n`);
+
+    const ans = (await askQuestion(rl, `${C.yellow}Select an action [1-2, *]: ${C.reset}`)).trim();
+    if (ans === '1') {
+      await patch(app, true, true);
+    }
+    return;
+  }
+
+  // Check 2: Already Patched
+  if (updateCheck.state === 'PATCHED_VERIFIED') {
+    console.log(`\n  ${C.yellow}${C.bold}YES → Already patched${C.reset}`);
+    console.log(`  ${C.white}${app.name}${C.reset} (v${app.version}) is currently patched & verified.`);
+    if (updateCheck.patchedAt) {
+      console.log(`  ${C.dim}Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
+    }
+    console.log('');
+    console.log(`  ${C.cyan}[1]${C.reset} ${C.white}Force Re-patch (Apply fresh BiDi patch)${C.reset}`);
+    console.log(`  ${C.red}[2]${C.reset} ${C.red}Rollback / Remove Patch (Restore original app backup)${C.reset}`);
+    console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Cancel / Back to Main Menu${C.reset}\n`);
+
+    const subChoice = (await askQuestion(rl, `${C.yellow}Select an action [1-2, *]: ${C.reset}`)).trim();
+    if (subChoice === '1') {
+      await patch(app, true, true);
+    } else if (subChoice === '2') {
+      rollbackApp(app.name);
+    }
+    return;
+  }
+
+  // Check 3: Process Running Check for Unpatched App
+  const running = isAppRunning(app);
+  if (running) {
+    console.log(`\n  ${C.yellow}⚡ Notice: ${app.name} is currently running.${C.reset}`);
+    console.log(`  ${C.dim}BidiForge will automatically terminate ${app.name}, apply the BiDi patch, and relaunch it.${C.reset}\n`);
+  }
+
+  const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${app.name} (v${app.version})? [Y/n]: ${C.reset}`)).trim();
+  if (confirmSingle.toLowerCase() !== 'n') {
+    await patch(app, true, false);
   }
 }
 
@@ -475,18 +546,7 @@ async function interactiveMenu() {
             }
             
             if (targetApp) {
-              const asarPath = path.join(targetApp.path, 'resources', 'app.asar');
-              const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
-              const updateCheck = status.checkSafeUpdateStatus(targetApp.path, currentHash, targetApp.version, asarPath);
-
-              if (updateCheck.state === 'PATCHED_VERIFIED') {
-                await handleAlreadyPatchedApp(rl, targetApp, updateCheck);
-              } else {
-                const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name} (v${targetApp.version})? [Y/n]: ${C.reset}`)).trim();
-                if (confirmSingle.toLowerCase() !== 'n') {
-                  await patch(targetApp, true, false);
-                }
-              }
+              await handleAppSelection(rl, targetApp);
             } else {
               console.log(`${C.red}[X] No matching application found for selection.${C.reset}`);
             }
@@ -508,19 +568,7 @@ async function interactiveMenu() {
           
           const num = parseInt(ans, 10);
           if (num > 0 && num <= apps.length) {
-            const targetApp = apps[num - 1];
-            const asarPath = path.join(targetApp.path, 'resources', 'app.asar');
-            const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
-            const updateCheck = status.checkSafeUpdateStatus(targetApp.path, currentHash, targetApp.version, asarPath);
-
-            if (updateCheck.state === 'PATCHED_VERIFIED') {
-              await handleAlreadyPatchedApp(rl, targetApp, updateCheck);
-            } else {
-              const confirmSingle = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
-              if (confirmSingle.toLowerCase() !== 'n') {
-                await patch(targetApp, true, false);
-              }
-            }
+            await handleAppSelection(rl, apps[num - 1]);
           }
         }
         break;
@@ -548,21 +596,8 @@ async function interactiveMenu() {
           const apps = detector.detectAll().filter(a => a.name.toLowerCase().includes(nameQuery.toLowerCase()));
           console.log(`${C.green}• Found ${apps.length} matching application(s)${C.reset}\n`);
           if (apps.length > 0) {
-            const targetApp = apps[0];
             apps.forEach((a, i) => console.log(`  ${C.cyan}[${i+1}]${C.reset} ${C.bold}${a.name}${C.reset} (v${a.version})`));
-            
-            const asarPath = path.join(targetApp.path, 'resources', 'app.asar');
-            const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
-            const updateCheck = status.checkSafeUpdateStatus(targetApp.path, currentHash, targetApp.version, asarPath);
-
-            if (updateCheck.state === 'PATCHED_VERIFIED') {
-              await handleAlreadyPatchedApp(rl, targetApp, updateCheck);
-            } else {
-              const doPatch = (await askQuestion(rl, `\n${C.yellow}[?] Are you sure you want to patch ${targetApp.name}? [Y/n]: ${C.reset}`)).trim();
-              if (doPatch.toLowerCase() !== 'n') {
-                await patch(targetApp, true, false);
-              }
-            }
+            await handleAppSelection(rl, apps[0]);
           }
         }
         break;
