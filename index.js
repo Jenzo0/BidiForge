@@ -23,14 +23,14 @@ const VERSION = '3.0.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
- * Print single professional banner
+ * Print single professional ASCII banner with pixel-perfect alignment
  */
 function banner() {
   console.log('');
   console.log('╔══════════════════════════════════════════════════════════════╗');
-  console.log('║                   B I D I F O R G E                          ║');
-  console.log('║        Universal BiDi Compatibility Layer v' + VERSION + '             ║');
-  console.log('║                   Developer: ' + DEVELOPER + '                       ║');
+  console.log('║                      B I D I F O R G E                       ║');
+  console.log('║         Universal BiDi Compatibility Layer v' + VERSION + '            ║');
+  console.log('║                       Developer: ' + DEVELOPER + '                      ║');
   console.log('╚══════════════════════════════════════════════════════════════╝');
   console.log('');
 }
@@ -70,7 +70,6 @@ function killAppProcess(appInfo) {
   }
   
   if (killedAny) {
-    // Brief pause to allow OS file system handles to release
     execSync('ping 127.0.0.1 -n 2 > nul', { stdio: 'pipe' });
   }
   
@@ -88,7 +87,6 @@ function relaunchAppProcess(appInfo) {
     let exePath = null;
     const parentDir = path.dirname(appInfo.path);
     
-    // Look for executable in app root or parent directory
     const candidates = [
       path.join(appInfo.path, `${appInfo.name}.exe`),
       path.join(parentDir, `${appInfo.name}.exe`),
@@ -154,7 +152,6 @@ async function patch(target = null, relaunch = true) {
       continue;
     }
 
-    // Auto-kill running process before patching to prevent EPERM locks
     killAppProcess(appInfo);
     
     let tempDir = null;
@@ -193,6 +190,7 @@ async function patch(target = null, relaunch = true) {
       }
       
       status.update(appInfo.path, {
+        name: appInfo.name,
         status: 'PATCHED',
         bidiForgeVersion: VERSION,
         appVersion: appInfo.version,
@@ -247,12 +245,15 @@ function scan() {
   console.log('Discovered Compatible Applications:');
   console.log('────────────────────────────────────────────────────────────');
   
-  const appStatus = status.read();
+  const registry = status.getAll() || {};
+  const appStatus = registry.apps || {};
+  
   apps.forEach((app, idx) => {
-    const reg = appStatus[app.path.toLowerCase()] || {};
-    const st = reg.status || 'NEW';
+    const key = app.path.toLowerCase();
+    const reg = appStatus[key] || appStatus[app.path] || {};
+    const st = reg.status || 'COMPATIBLE';
     const tag = st === 'PATCHED' ? '[PATCHED]' : '[COMPATIBLE]';
-    console.log(`  [${idx + 1}] ${app.name} (v${app.version}) ${tag}`);
+    console.log(`  [${idx + 1}] ${app.name} (v${app.version})  ${tag}`);
     console.log(`      Path: ${app.path}`);
   });
   
@@ -374,29 +375,70 @@ async function interactiveMenu() {
     console.log('');
     
     switch (choice) {
-      case '1':
-        scan();
+      case '1': {
+        const apps = scan();
+        if (apps.length > 0) {
+          const doPatch = (await askQuestion(rl, 'Do you want to patch any of the discovered applications now? [Y/n]: ')).trim();
+          if (doPatch.toLowerCase() !== 'n') {
+            const ans = (await askQuestion(rl, `Enter App Number [1-${apps.length}], App Name (e.g. discord), or A for ALL (0 to cancel): `)).trim();
+            if (ans.toUpperCase() === 'A') {
+              const confirmAll = (await askQuestion(rl, `Are you sure you want to patch ALL ${apps.length} applications? [Y/n]: `)).trim();
+              if (confirmAll.toLowerCase() !== 'n') {
+                await patch(null);
+              }
+            } else if (ans !== '0') {
+              const num = parseInt(ans, 10);
+              let targetApp = null;
+              if (num > 0 && num <= apps.length) {
+                targetApp = apps[num - 1];
+              } else if (ans.length > 0) {
+                targetApp = apps.find(a => a.name.toLowerCase().includes(ans.toLowerCase()));
+              }
+              
+              if (targetApp) {
+                const confirmSingle = (await askQuestion(rl, `Are you sure you want to patch ${targetApp.name}? [Y/n]: `)).trim();
+                if (confirmSingle.toLowerCase() !== 'n') {
+                  await patch(targetApp);
+                }
+              } else {
+                console.log('[X] No matching application selected.');
+              }
+            }
+          }
+        }
         break;
+      }
         
       case '2': {
         const apps = scan();
         if (apps.length > 0) {
-          const ans = (await askQuestion(rl, 'Enter App Number to patch (or A for All, 0 to cancel): ')).trim();
+          const ans = (await askQuestion(rl, `Enter App Number [1-${apps.length}] to patch (or A for All, 0 to cancel): `)).trim();
           if (ans.toUpperCase() === 'A') {
-            await patch(null);
-          } else {
+            const confirmAll = (await askQuestion(rl, `Are you sure you want to patch ALL ${apps.length} applications? [Y/n]: `)).trim();
+            if (confirmAll.toLowerCase() !== 'n') {
+              await patch(null);
+            }
+          } else if (ans !== '0') {
             const num = parseInt(ans, 10);
             if (num > 0 && num <= apps.length) {
-              await patch(apps[num - 1]);
+              const targetApp = apps[num - 1];
+              const confirmSingle = (await askQuestion(rl, `Are you sure you want to patch ${targetApp.name}? [Y/n]: `)).trim();
+              if (confirmSingle.toLowerCase() !== 'n') {
+                await patch(targetApp);
+              }
             }
           }
         }
         break;
       }
       
-      case '3':
-        await patch(null);
+      case '3': {
+        const confirmAll = (await askQuestion(rl, 'Are you sure you want to patch ALL discovered applications? [Y/n]: ')).trim();
+        if (confirmAll.toLowerCase() !== 'n') {
+          await patch(null);
+        }
         break;
+      }
         
       case '4': {
         const nameQuery = (await askQuestion(rl, 'Enter application name to search (e.g. discord, slack, obsidian): ')).trim();
@@ -407,7 +449,7 @@ async function interactiveMenu() {
           console.log('');
           if (apps.length > 0) {
             apps.forEach((a, i) => console.log(`  [${i+1}] ${a.name} (${a.version}) - Path: ${a.path}`));
-            const doPatch = (await askQuestion(rl, '\nDo you want to patch these application(s) now? [Y/n]: ')).trim();
+            const doPatch = (await askQuestion(rl, `\nAre you sure you want to patch ${apps[0].name}? [Y/n]: `)).trim();
             if (doPatch.toLowerCase() !== 'n') {
               await patch(nameQuery);
             }
@@ -466,7 +508,6 @@ async function interactiveMenu() {
   const args = process.argv.slice(2);
   
   if (args.length === 0) {
-    // If run without arguments, enter interactive menu
     await interactiveMenu();
     return;
   }

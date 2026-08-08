@@ -41,7 +41,8 @@ function getAll() {
  */
 function get(appPath) {
   const status = getAll();
-  return status.apps[appPath] || null;
+  const apps = status.apps || {};
+  return apps[appPath.toLowerCase()] || apps[appPath] || null;
 }
 
 /**
@@ -50,13 +51,15 @@ function get(appPath) {
 function update(appPath, data) {
   init();
   const status = getAll();
-  status.apps[appPath] = {
-    ...(status.apps[appPath] || {}),
+  if (!status.apps) status.apps = {};
+  const key = appPath.toLowerCase();
+  status.apps[key] = {
+    ...(status.apps[key] || {}),
     ...data,
     updatedAt: new Date().toISOString(),
   };
   fs.writeFileSync(STATUS_FILE, JSON.stringify(status, null, 2));
-  return status.apps[appPath];
+  return status.apps[key];
 }
 
 /**
@@ -112,6 +115,8 @@ function needsRepatch(appPath, currentHash) {
 module.exports = {
   init,
   getAll,
+  read: getAll,
+  readRegistry: getAll,
   get,
   update,
   setPatched,
