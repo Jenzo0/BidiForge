@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes Agent Card TUI Engine (v3.7.1 Engine)
- * Smooth TUI Rendering (No Black Screen), Hidden Cursor during navigation, & Arrow key cursor ONLY
+ * BidiForge — Hermes Agent Card TUI Engine (v3.7.3 Engine)
+ * Smooth Compact TUI Rendering (Guaranteed Zero Black Screen & Auto-Paginated Viewport)
  * 
- * @version 3.7.1
+ * @version 3.7.3
  * @author Jenzo0
  */
 
@@ -10,10 +10,10 @@ const readline = require('readline');
 const themeEngine = require('./theme');
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const DEFAULT_CARD_WIDTH = 64;
+const DEFAULT_CARD_WIDTH = 66;
 
 /**
- * Smoothly refresh terminal screen without buffer destruction or black screen artifacts
+ * Smoothly refresh terminal screen in-place without buffer destruction or black screen
  */
 function clearScreen() {
   if (process.stdout.isTTY) {
@@ -44,8 +44,6 @@ function showCursor() {
 
 /**
  * Strip ANSI escape codes from string
- * @param {string} str - String with ANSI codes
- * @returns {string} Clean string
  */
 function stripAnsi(str) {
   return (str || '').replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
@@ -53,8 +51,6 @@ function stripAnsi(str) {
 
 /**
  * Get accurate visual width of string taking ANSI codes, emoji, and surrogate pairs into account
- * @param {string} str - String to measure
- * @returns {number} Display column width
  */
 function getVisualWidth(str) {
   const clean = stripAnsi(str);
@@ -75,10 +71,6 @@ function getVisualWidth(str) {
 
 /**
  * Format a single line enclosed inside a Hermes rounded card container
- * @param {string} leftText - Left text content
- * @param {string} rightTag - Optional right-aligned status badge
- * @param {number} width - Card width
- * @returns {string} Formatted card line
  */
 function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH) {
   const T = themeEngine.getTheme();
@@ -97,10 +89,6 @@ function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH)
 
 /**
  * Print Hermes Agent Rounded Card Container with embedded title (╭─ Title ───╮)
- * @param {Array} rows - Array of row objects { label/text, tag } or strings
- * @param {string} title - Embedded title text
- * @param {string} subtitle - Optional current state / subtitle line
- * @param {number} cardWidth - Target card width
  */
 function printHermesCard(rows = [], title = '', subtitle = '', cardWidth = DEFAULT_CARD_WIDTH) {
   const T = themeEngine.getTheme();
@@ -129,11 +117,10 @@ function printHermesCard(rows = [], title = '', subtitle = '', cardWidth = DEFAU
 }
 
 /**
- * Print sleek bottom prompt input bar (❯ |)
+ * Print sleek compact prompt input bar (❯ |)
  */
 function printPromptBar(tipText = '') {
   const T = themeEngine.getTheme();
-  console.log('');
   if (tipText) {
     console.log(`${T.dim}✦ Tip: ${tipText}${T.reset}`);
   }
@@ -142,11 +129,19 @@ function printPromptBar(tipText = '') {
 }
 
 /**
- * Interactive Hermes Card Selector (↑ Up / ↓ Down / Enter / Esc / Live Search /)
- * Enforces Arrow key cursor navigation ONLY (No numbers)
+ * Compact Header Banner for Interactive Menus to prevent viewport scrolling
+ */
+function printCompactMenuHeader() {
+  const T = themeEngine.getTheme();
+  console.log(`${T.title}${T.bold}  ⚡ BidiForge Engine v3.7.3${T.reset} ${T.border}· Universal BiDi Compatibility Layer · Developer: Jenzo0${T.reset}\n`);
+}
+
+/**
+ * Interactive Hermes Card Selector with Auto-Windowing Pagination
+ * Guarantees zero viewport overflow and zero black screens
  * @param {Array} options - List of string options or objects { label, tag, value }
  * @param {string} promptText - Card title
- * @param {function} headerFn - Banner callback
+ * @param {function} headerFn - Optional custom header callback (defaults to compact)
  * @param {string} subtitleText - Card subtitle state
  * @returns {Promise<number>} Selected index
  */
@@ -180,8 +175,12 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
 
     function render() {
       clearScreen();
-      if (typeof headerFn === 'function') {
+      
+      // Use compact header in interactive mode to prevent terminal scrolling overflow
+      if (typeof headerFn === 'function' && headerFn.name !== 'banner') {
         headerFn();
+      } else {
+        printCompactMenuHeader();
       }
 
       const filtered = getFilteredOptions();
@@ -199,7 +198,29 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
         rows.push({ label: `${T.warning}✖ No items matching "${searchQuery}"${T.reset}` });
       } else {
         if (selectedIndex >= filtered.length) selectedIndex = 0;
-        filtered.forEach((item, idx) => {
+
+        // Auto-calculate max visible rows based on terminal window height
+        const termRows = process.stdout.rows || 24;
+        const maxVisible = Math.max(5, Math.min(10, termRows - 12));
+
+        let startIdx = 0;
+        let endIdx = filtered.length;
+
+        if (filtered.length > maxVisible) {
+          startIdx = Math.max(0, selectedIndex - Math.floor(maxVisible / 2));
+          endIdx = startIdx + maxVisible;
+          if (endIdx > filtered.length) {
+            endIdx = filtered.length;
+            startIdx = Math.max(0, endIdx - maxVisible);
+          }
+        }
+
+        if (startIdx > 0) {
+          rows.push({ label: `${T.dim}  ▲ ${startIdx} more items above...${T.reset}` });
+        }
+
+        for (let idx = startIdx; idx < endIdx; idx++) {
+          const item = filtered[idx];
           const rawLabel = typeof item.opt === 'string' ? item.opt : item.opt.label;
           const cleanLabel = rawLabel.replace(/^⚡\s*\[\d+\]\s*/, '⚡ ').replace(/^⚙️\s*\[\d+\]\s*/, '⚙️ ').replace(/^🚀\s*\[\d+\]\s*/, '🚀 ').replace(/^🔍\s*\[\d+\]\s*/, '🔍 ').replace(/^📂\s*\[\d+\]\s*/, '📂 ').replace(/^🛡️\s*\[\d+\]\s*/, '🛡️ ').replace(/^🩺\s*\[\d+\]\s*/, '🩺 ').replace(/^🔄\s*\[\d+\]\s*/, '🔄 ').replace(/^🖱️\s*\[\d+\]\s*/, '🖱️ ').replace(/^📦\s*\[\d+\]\s*/, '📦 ').replace(/^🧹\s*\[\d+\]\s*/, '🧹 ').replace(/^🧪\s*\[\d+\]\s*/, '🧪 ').replace(/^🎨\s*\[\d+\]\s*/, '🎨 ').replace(/^❌\s*\[\d+\]\s*/, '❌ ').replace(/^\[\d+\]\s*/, '');
           const tag = (typeof item.opt === 'object' && item.opt.tag) ? item.opt.tag : '';
@@ -211,10 +232,14 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
             const dimLabel = `  ${T.text}${cleanLabel}${T.reset}`;
             rows.push({ label: dimLabel, tag });
           }
-        });
+        }
+
+        if (endIdx < filtered.length) {
+          rows.push({ label: `${T.dim}  ▼ ${filtered.length - endIdx} more items below...${T.reset}` });
+        }
       }
 
-      printHermesCard(rows, promptText, subtitleText || `Select option with ↑/↓ arrows and press Enter`, 66);
+      printHermesCard(rows, promptText, subtitleText || `Select option with ↑/↓ arrows and press Enter`, DEFAULT_CARD_WIDTH);
       printPromptBar(isSearchMode ? 'Type query to filter, Backspace to delete, Esc to cancel' : 'Use ↑/↓ to navigate, / to filter, Enter to select, Esc to back');
     }
 
@@ -289,10 +314,6 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
 
 /**
  * Multi-Selection Checkbox Selector ([ ] / [x]) inside Hermes Rounded Card Container
- * @param {Array} options - List of options { label, tag, value }
- * @param {string} promptText - Card title
- * @param {function} headerFn - Banner callback
- * @returns {Promise<Array>} Selected objects
  */
 function promptMultiSelect(options, promptText = 'Select Applications to Patch', headerFn = null) {
   return new Promise(resolve => {
@@ -312,7 +333,11 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
 
     function render() {
       clearScreen();
-      if (typeof headerFn === 'function') headerFn();
+      if (typeof headerFn === 'function' && headerFn.name !== 'banner') {
+        headerFn();
+      } else {
+        printCompactMenuHeader();
+      }
 
       const rows = [];
       options.forEach((opt, idx) => {
@@ -331,7 +356,7 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
         }
       });
 
-      printHermesCard(rows, promptText, 'Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm', 66);
+      printHermesCard(rows, promptText, 'Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm', DEFAULT_CARD_WIDTH);
       printPromptBar('Space to toggle selection [x], Enter to execute patch on selected apps');
     }
 
@@ -434,6 +459,7 @@ module.exports = {
   printHermesCard,
   formatCardRow,
   printPromptBar,
+  printCompactMenuHeader,
   clearScreen,
   hideCursor,
   showCursor,
