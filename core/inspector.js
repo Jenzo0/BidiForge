@@ -60,7 +60,7 @@ function inspectApp(appInfo) {
     name: 'BiDi Compatibility Engine Injected',
     passed: isPatched,
     weight: 25,
-    detail: isPatched ? 'BidiForge v3.0 BiDi engine detected in ASAR' : 'No BiDi engine found in application code',
+    detail: isPatched ? 'BidiForge BiDi engine detected in ASAR' : 'No BiDi engine found in application code',
   });
 
   // Check 3: Text & Input Composer Selectors Coverage

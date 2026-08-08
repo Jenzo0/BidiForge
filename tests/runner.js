@@ -1,5 +1,5 @@
 /**
- * BidiForge — Diagnostic Test Runner (v3.1 Engine)
+ * BidiForge — Diagnostic Test Runner (v4.0 Engine)
  * Runs unit test suite for BidiForge modules
  */
 
@@ -31,7 +31,7 @@ function test(name, fn) {
 }
 
 console.log('========================================');
-console.log('       BIDIFORGE TEST SUITE v3.1.0      ');
+console.log('       BIDIFORGE TEST SUITE v4.0.0      ');
 console.log('========================================');
 
 // Test Group 1: Detector Engine
@@ -88,7 +88,7 @@ console.log('');
 console.log('[4/7] Testing Injection & Idempotency...');
 test('buildSnippet generates complete injection code with BidiForge markers', () => {
   const snippet = engine.buildSnippet('app', { name: 'testApp' });
-  assert(snippet.includes('/*=== BidiForge v3.0'), 'Missing start marker');
+  assert(snippet.includes('/*=== BidiForge'), 'Missing start marker');
 });
 
 test('strip removes previous BidiForge injections cleanly', () => {
@@ -115,9 +115,9 @@ test('validateSyntax passes for valid JavaScript code', () => {
   assert.strictEqual(isValid, true, 'engine.js should pass node --check');
 });
 
-// Test Group 7: BidiForge v3.1.0 Advanced Features
+// Test Group 7: Advanced Engine Features
 console.log('');
-console.log('[7/7] Testing v3.1.0 Advanced Features...');
+console.log('[7/7] Testing Advanced Engine Features...');
 test('inspector.inspectApp generates health score report', () => {
   const rep = inspector.inspectApp({ name: 'TestApp', path: path.join(__dirname, '..') });
   assert(typeof rep.score === 'number', 'Expected numeric health score');

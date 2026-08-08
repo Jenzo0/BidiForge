@@ -120,7 +120,7 @@ function generateJS(appInfo = {}) {
   }
   
   return [
-    '/* BidiForge BiDi Compatibility Engine v3.0.0 - Developer: Jenzo0 */',
+    '/* BidiForge BiDi Compatibility Engine v4.0.0 - Developer: Jenzo0 */',
     '(function(){',
     'if(window.__bidiForge_installed) return;',
     'window.__bidiForge_installed = true;',
@@ -236,7 +236,7 @@ function buildSnippet(appRef = 'app', appInfo = {}) {
   const js = rawJS.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\${/g, '\\${');
   
   return [
-    '/*=== BidiForge v3.0 (Universal Engine) — Developer: Jenzo0 ===*/',
+    '/*=== BidiForge v4.0 (Universal Engine) — Developer: Jenzo0 ===*/',
     `const BIDIFORGE_CSS=\`${css}\`;`,
     `const BIDIFORGE_JS=\`${js}\`;`,
     `function __bidiForgeInject(wc){`,

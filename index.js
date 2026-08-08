@@ -752,7 +752,46 @@ async function interactiveMenu() {
   }
   
   const command = args[0].toLowerCase();
-  
+  const isJsonMode = process.argv.includes('--json');
+
+  if (isJsonMode) {
+    try {
+      if (['scan', '--scan', '-s', 'status', '--status'].includes(command)) {
+        const apps = detector.detectAll();
+        console.log(JSON.stringify({ success: true, version: VERSION, operation: 'scan', apps }, null, 2));
+      } else if (['patch', '--patch'].includes(command)) {
+        const targetApp = args[1] && args[1] !== '--json' ? args[1] : null;
+        const results = await patch(targetApp);
+        console.log(JSON.stringify({ success: true, version: VERSION, operation: 'patch', results }, null, 2));
+      } else if (['rollback', '--rollback', '-r'].includes(command)) {
+        const targetApp = args[1] && args[1] !== '--json' ? args[1] : null;
+        if (!targetApp) {
+          console.log(JSON.stringify({ success: false, version: VERSION, operation: 'rollback', error: 'Missing target application parameter' }, null, 2));
+        } else {
+          const apps = detector.detectAll();
+          const matched = apps.find(a => a.name.toLowerCase().includes(targetApp.toLowerCase()) || a.path.toLowerCase().includes(targetApp.toLowerCase()));
+          const targetPath = matched ? matched.path : targetApp;
+          const res = backup.rollback(targetPath);
+          console.log(JSON.stringify({ success: res.success, version: VERSION, operation: 'rollback', result: res }, null, 2));
+        }
+      } else if (['health', '--health'].includes(command)) {
+        const targetApp = args[1] && args[1] !== '--json' ? args[1] : null;
+        const apps = detector.detectAll();
+        const app = targetApp ? apps.find(a => a.name.toLowerCase().includes(targetApp.toLowerCase())) || { name: targetApp, path: targetApp } : apps[0];
+        const report = app ? inspector.inspectApp(app) : null;
+        console.log(JSON.stringify({ success: !!report, version: VERSION, operation: 'health', report }, null, 2));
+      } else if (['cleanup', '--cleanup', '-c'].includes(command)) {
+        const res = backup.cleanup();
+        console.log(JSON.stringify({ success: true, version: VERSION, operation: 'cleanup', result: res }, null, 2));
+      } else {
+        console.log(JSON.stringify({ success: false, version: VERSION, error: `Unsupported JSON command: ${command}` }, null, 2));
+      }
+    } catch (err) {
+      console.log(JSON.stringify({ success: false, version: VERSION, error: err.message }, null, 2));
+    }
+    return;
+  }
+
   try {
     switch (command) {
       case 'scan':

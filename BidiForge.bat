@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-title BidiForge - Universal BiDi Compatibility Layer for Electron v3.0
+title BidiForge - Universal BiDi Compatibility Layer for Electron v4.0
 
 REM Set Working Directory
 cd /d "%~dp0"

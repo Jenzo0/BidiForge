@@ -9,9 +9,9 @@
 [![License](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
-*A powerful Windows CLI tool that patches Electron applications to render Arabic & RTL text flawlessly — in seconds, with zero breakage.*
+*A powerful Windows CLI tool that patches Electron desktop applications to render Arabic & RTL text correctly — with automated backup, ASAR integrity validation, and instant rollback.*
 
-[**Getting Started**](#-quick-start) · [**Screenshots**](#-interface-screenshots) · [**Features**](#-features) · [**Usage**](#-usage) · [**Architecture**](#-architecture)
+[**Getting Started**](#-quick-start) · [**Screenshots**](#-interface-screenshots--features) · [**Features**](#-features) · [**Compatibility**](#-compatibility-status) · [**Usage**](#-usage) · [**Architecture**](#-architecture)
 
 </div>
 
@@ -33,14 +33,14 @@
 
 - **🪬 Hermes Agent TUI**: Responsive header auto-windowing, arrow-key cursor navigation, dynamic card rendering, and zero scrollback repetition.
 - **⚡ Safe Multi-Stage Repacker**: ASAR extraction, ES module & Webpack syntax validation, and Windows file-lock resilience (`safeRename`).
-- **🎨 Live Hot-Reload Watcher**: Real-time configuration watcher with customizable themes (Cyberpunk Red, Cyberpunk Cyan, Monokai) for background auto-patching.
+- **🎨 Live Hot-Reload Watcher**: Real-time configuration watcher with customizable themes (`cyberpunk`, `matrix`, `dracula`, `amber`, `nordic`, `monokai`) for background auto-patching.
 - **🖱️ Windows Shell Integration**: One-click right-click context menu integration for instant application patching directly from File Explorer.
 
 ---
 
 ## 🌍 The Problem
 
-Over **70% of modern desktop applications** are built on Electron — Discord, VS Code, Obsidian, Slack, Notion, and hundreds more. But most of them **completely fail** at rendering Right-to-Left (RTL) and Bidirectional (BiDi) text.
+Over **70% of modern desktop applications** are built on Electron — Discord, VS Code, Obsidian, Slack, Notion, and hundreds more. But most of them **fail** at rendering Right-to-Left (RTL) and Bidirectional (BiDi) text out of the box.
 
 For **400+ million** Arabic, Hebrew, Persian, and Urdu speakers, this means:
 
@@ -48,7 +48,7 @@ For **400+ million** Arabic, Hebrew, Persian, and Urdu speakers, this means:
 |---|---|
 | `م ر ح ب ا` disconnected letters | `مرحبا` properly connected Arabic |
 | `!dlrow ,olleH مرحبا` reversed mixed text | `مرحبا, Hello world!` natural BiDi flow |
-| Broken UI alignment in RTL contexts | Pixel-perfect RTL layout injection |
+| Broken UI alignment in RTL contexts | Contextual RTL layout and text direction injection |
 
 **BidiForge surgically patches these apps at the ASAR level** — no source code access needed, no app rebuilds, no waiting for upstream fixes.
 
@@ -174,29 +174,51 @@ node index.js cleanup
 
 ---
 
+## 📱 Compatibility Status
+
+BidiForge uses a universal ASAR injection engine. Application compatibility is categorized as follows:
+
+### Verified & Tested
+Applications manually tested and verified in Windows environments:
+- **Discord** (v1.0+)
+- **OpenCode AI Desktop** (v1.18+)
+- **Antigravity IDE** (v2.5+)
+- **Obsidian** (v1.13+)
+- **Heroic Games Launcher** (v2.22+)
+- **Docker Desktop Frontend** (v4.85+)
+
+### Generic Electron Candidates (Potentially Compatible)
+- Standard Electron desktop applications (v12–v32) packaged with `resources/app.asar` using CommonJS or ES Module entry points.
+
+### Not Verified / Unsupported
+- Non-Electron native applications (Win32, WPF, UWP, C++).
+- Electron apps with custom binary obfuscation or non-standard native ASAR headers.
+
+---
+
 ## 🎨 Color Themes
 
-BidiForge ships with multiple built-in color themes:
+BidiForge ships with 6 built-in TUI color themes (`ui/theme.js`):
 
-| Theme | Style |
-|-------|-------|
-| **Cyberpunk Cyan** | Neon cyan borders with amber accents (default) |
-| **Monokai** | Warm tones inspired by the classic editor theme |
-| **Solarized Dark** | Ethan Schoonover's precision colors |
-| **Dracula** | Purple-accented dark theme |
-| **Nord** | Arctic, north-bluish color palette |
-| **One Dark** | Atom editor's signature palette |
+| Theme Key | Name & Palette Style |
+|-----------|----------------------|
+| `cyberpunk` | **Cyberpunk Cyan** — Neon cyan borders with gold accents (default) |
+| `matrix` | **Neon Emerald Matrix** — Bright green borders with cyan accents |
+| `dracula` | **Dracula Purple** — Purple-accented dark theme |
+| `amber` | **Gold Amber** — Warm amber borders with cyan accents |
+| `nordic` | **Nordic Deep Blue** — Deep blue borders with yellow accents |
+| `monokai` | **Monokai Sunset** — Vibrant red/orange borders with yellow title accents |
 
 Switch themes anytime:
 ```bash
-node index.js theme dracula
+node index.js theme matrix
 ```
 
 ---
 
 ## 🏗️ Architecture
 
-BidiForge operates through a sophisticated multi-stage pipeline:
+BidiForge operates through a multi-stage pipeline:
 
 <details>
 <summary><b>Click to view architecture diagram</b></summary>
@@ -254,23 +276,25 @@ BidiForge/
 ├── ui/
 │   ├── menu.js            # Hermes Agent TUI engine
 │   └── theme.js           # Color theme engine
+├── docs/                  # Architecture & GUI Integration Specs
 └── tests/
-    └── runner.js           # Automated test suite
+    ├── runner.js          # Automated diagnostic test runner
+    └── border_test.js     # TUI layout & visual width test suite
 ```
 
 ---
 
 ## 🧪 Testing
 
-BidiForge includes a comprehensive automated test suite:
+BidiForge includes an automated diagnostic test suite:
 
 ```bash
-node tests/runner.js
+npm test
 ```
 
 ```
 ========================================
-       BIDIFORGE TEST SUITE v3.1.0      
+       BIDIFORGE TEST SUITE v4.0.0      
 ========================================
 
   ✓ detectAll returns an array of Electron apps
@@ -282,14 +306,15 @@ node tests/runner.js
   ✓ generateJS uses subtree MutationObserver without full-DOM polling
   ✓ buildSnippet generates complete injection code with BidiForge markers
   ✓ strip removes previous BidiForge injections cleanly
-  ✓ backup.init initializes backups folder and manifest
+  ✓ backup.init initializes backups folder and manifest with engine version
   ✓ validateSyntax passes for valid JavaScript code
   ✓ inspector.inspectApp generates health score report
   ✓ vault.getManifest initializes snapshot manifest
   ✓ shell.register generates valid Windows registry commands
+  ✓ border_test suite passes all 5 alignment assertions
 
 ========================================
-RESULTS: 14 PASSED, 0 FAILED
+RESULTS: 15 PASSED, 0 FAILED
 ========================================
 ```
 
