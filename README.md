@@ -17,33 +17,24 @@
 
 ---
 
-## 📸 Interface Screenshots
+## 📸 Interface Screenshots & Features
 
 <div align="center">
 
-### 1. 🪬 Interactive Main Menu (Hermes TUI)
-![BidiForge Interactive Main Menu](docs/images/tui-main-menu.png)
-*Interactive Main Menu featuring responsive header, detected apps status, and keyboard-driven Hermes TUI card.*
-
----
-
-### 2. ⚡ Confirmation & Multi-Stage Repack Engine
-![Confirm Patch & Safe Repack](docs/images/tui-confirm-patch.png)
-*Confirmation screen demonstrating safe ASAR extraction, ES module syntax validation, and file-lock resilience.*
-
----
-
-### 3. 🎨 Live Hot-Reload Watcher & Theme Engine
-![Live Hot-Reload Watcher](docs/images/tui-live-watcher.png)
-*Live Hot-Reload Watcher engine running in Cyberpunk Red color theme, monitoring rules for real-time auto-patching.*
-
----
-
-### 4. 🖱️ Windows Explorer Context Menu Integration
-![Windows Explorer Context Menu Integration](docs/images/windows-context-menu.png)
-*One-click Windows Explorer right-click context menu integration for instant application patching.*
+| 🪬 Interactive Main Menu (TUI) | ⚡ Confirmation & Safe Repack Engine |
+|:---:|:---:|
+| <img src="docs/images/tui-main-menu.png" width="460"> | <img src="docs/images/tui-confirm-patch.png" width="460"> |
+| **🎨 Live Hot-Reload Watcher** | **🖱️ Windows Explorer Integration** |
+| <img src="docs/images/tui-live-watcher.png" width="460"> | <img src="docs/images/windows-context-menu.png" width="300"> |
 
 </div>
+
+### 🌟 Key Feature Highlights
+
+- **🪬 Hermes Agent TUI**: Responsive header auto-windowing, arrow-key cursor navigation, dynamic card rendering, and zero scrollback repetition.
+- **⚡ Safe Multi-Stage Repacker**: ASAR extraction, ES module & Webpack syntax validation, and Windows file-lock resilience (`safeRename`).
+- **🎨 Live Hot-Reload Watcher**: Real-time configuration watcher with customizable themes (Cyberpunk Red, Cyberpunk Cyan, Monokai) for background auto-patching.
+- **🖱️ Windows Shell Integration**: One-click right-click context menu integration for instant application patching directly from File Explorer.
 
 ---
 
