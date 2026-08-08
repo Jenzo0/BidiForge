@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Logs
+logs/*.log
+*.log
+
+# Backups & Data Store
+backups/*.bak
+backups/manifest.json
+backups/status.json
+
+# Temporary Files & Archives
+*.tmp
+*.temp
+*.zip
+.DS_Store
+Thumbs.db
