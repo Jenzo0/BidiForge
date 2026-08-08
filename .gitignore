@@ -13,6 +13,7 @@ backups/status.json
 # Temporary Files & Archives
 *.tmp
 *.temp
+temp/
 *.zip
 .DS_Store
 Thumbs.db

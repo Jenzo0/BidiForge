@@ -54,6 +54,7 @@ function stripAnsi(str) {
 
 /**
  * Accurate terminal character width helper (Guarantees 100% straight vertical border lines)
+ * Handles: Astral plane emoji (2 cols), BMP emoji+FE0F (2 cols), Variation Selector (0 cols)
  */
 function getVisualWidth(str) {
   const clean = stripAnsi(str);
@@ -61,12 +62,15 @@ function getVisualWidth(str) {
   for (let i = 0; i < clean.length; i++) {
     const code = clean.codePointAt(i);
     if (code > 0xFFFF) {
-      w += 2; // Emoji in Astral Plane (e.g. 🚀, 📂, 🛡️) occupy 2 display columns
+      // Astral Plane emoji (🚀 📂 🛡 🩺 🔄 🖱 📦 🧹 🧪 🎨 etc.) — 2 display columns
+      w += 2;
       i++; // Skip low surrogate
     } else if (code === 0xFE0F) {
-      w += 0; // Variation Selector-16
+      // Variation Selector-16: makes previous BMP char render as emoji (2 cols)
+      // Previous char was counted as 1, but with FE0F it renders as 2 → add 1 extra
+      w += 1;
     } else {
-      w += 1; // Standard symbols (✓ U+2713, ★ U+2605, ⚡ U+26A1) occupy 1 display column
+      w += 1;
     }
   }
   return w;

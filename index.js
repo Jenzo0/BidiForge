@@ -82,7 +82,6 @@ function banner() {
     `${T.dim}Discovered Apps:${T.reset}  ${T.success}${appsCount} Electron Apps Detected${T.reset}`,
     `${T.dim}BiDi Engine:${T.reset}       ${T.text}v${VERSION} Subtree MutationObserver${T.reset}`,
     `${T.dim}Active Theme:${T.reset}      ${T.border}${themeEngine.getTheme().name || 'Cyberpunk Cyan'}${T.reset}`,
-    `${T.dim}Developer:${T.reset}         ${T.title}${DEVELOPER}${T.reset}`,
   ];
 
   for (let i = 0; i < Math.max(logoArt.length, sysInfo.length); i++) {

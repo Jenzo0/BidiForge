@@ -1,221 +1,148 @@
-# BidiForge — Universal BiDi Compatibility Layer for Electron 🚀
+<div align="center">
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Electron-lightgrey.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)
+# 🪬 BidiForge
 
-> **Universal BiDi Compatibility Layer for Electron**
+**Universal BiDi Compatibility Layer for Electron Applications**
 
-**BidiForge** automatically detects and patches compatible Electron applications using structure-based analysis to fix and optimize **Right-to-Left (RTL)** and **Bi-Directional (BiDi)** text rendering (Arabic, Hebrew, Persian, etc.) on Windows, seamlessly with an interactive CLI menu or single command.
+[![Version](https://img.shields.io/npm/v/bidiforge?color=cyan&label=Version)](https://github.com/Jenzo0/BidiForge)
+[![Node](https://img.shields.io/node/v/bidiforge?color=green)](https://nodejs.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-blue.svg)](https://microsoft.com/windows)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+*A robust Windows CLI tool that patches Electron applications to render Arabic & RTL text perfectly.*
 
-## 📖 Table of Contents / جدول المحتويات
-- [English Documentation](#english-documentation)
-  - [Author & Credits](#-author--credits)
-  - [What It Solves](#-what-it-solves)
-  - [Supported Applications](#-supported-applications)
-  - [Quick Start](#-quick-start)
-  - [CLI Commands](#-cli-commands)
-  - [Project Architecture](#-project-architecture)
-  - [Safety & Rollback](#-safety--rollback)
-  - [License](#-license)
-- [التوثيق باللغة العربية](#التوثيق-باللغة-العربية)
+</div>
+
+## 🌐 The Problem
+Most modern desktop apps are built using Electron, but many of them fail to properly support Right-to-Left (RTL) text rendering and Bidirectional (BiDi) text out of the box. This causes Arabic text to appear disjointed or backwards.
+
+## 🛠️ The Solution: BidiForge
+BidiForge is a sophisticated CLI tool that automatically scans your system for Electron apps and surgically injects RTL CSS and JS patches directly into the app's ASAR archives—without breaking the app.
 
 ---
 
-## English Documentation
+## ✨ Features
 
-### 👤 Author & Credits
-- **Developed:** Jenzo0
-- **Version:** v3.0.0 (Universal Architecture)
-- **License:** Open Source under the MIT License
-
----
-
-### 💡 What It Solves
-Electron-based desktop apps (such as **Discord**, **VS Code**, **Cursor**, **OpenCode**, **Antigravity**, **Obsidian**, **Slack**, various **AI clients**, and **Internal Electron apps**) often suffer from broken BiDi/RTL text rendering:
-- ❌ **Reversed Mixed Text:** English words, numbers, and URLs appearing inverted at the start of RTL sentences.
-- ❌ **List Markers Misplacement:** Ordered list numbers (`1.` `2.`) and bullets (`•`) stuck on the left side despite RTL content.
-- ❌ **Composer Alignment Issues:** Incorrect typing direction and text alignment inside chat inputs and textareas.
-- ❌ **Unaligned Tables:** RTL Markdown and HTML tables failing to align to the right.
-
-**The BidiForge Solution:**
-- ✅ Dynamic first-strong character detection for natural BiDi isolation.
-- ✅ Proper RTL alignment for paragraphs, headings, lists, and tables.
-- ✅ **Auto Process Termination & Auto-Relaunch:** Kills running processes (e.g. `Discord.exe`) automatically before patching to prevent file locks, applies the patch, and relaunches the app automatically.
-- ✅ **Strict LTR Preservation:** Code blocks, Monaco Editor, CodeMirror, diff viewers, and terminals remain 100% LTR isolated without any side effects.
+- **🔍 Auto-Discovery**: Scans and detects all installed Electron apps automatically.
+- **💉 Smart Patcher**: Injects BiDi/RTL CSS + JS via safe ASAR modification.
+- **🛡️ Safe Updates**: Auto-repairs patches if an app vendor update overwrites them.
+- **🕰️ Snapshot Vault**: Multi-version snapshot vault for instant rollback and restore.
+- **🔥 Live Hot-Reload Watcher**: Applies patches in real-time as you tweak configurations.
+- **🖱️ Explorer Integration**: Right-click context menu integration in Windows Explorer.
+- **🏥 Health Inspector**: Full diagnostic suite to check app integrity and patch status.
+- **🎨 Hermes Agent TUI**: A beautiful terminal user interface with themed cards, animated spinners, and arrow key navigation.
+- **🌈 Multiple Themes**: Choose from Cyberpunk Cyan, Monokai, Solarized, and more!
 
 ---
 
-### 🎯 Supported Applications
-BidiForge is designed to support compatible Electron applications using structure-based detection:
-- **Discord**
-- **VS Code**
-- **Cursor**
-- **OpenCode AI Desktop**
-- **Antigravity IDE**
-- **Obsidian**
-- **Slack**
-- **AI clients** (Desktop LLM apps, streaming chat clients)
-- **Internal Electron apps** (Company internal tools)
-- **Compatible Electron applications running on Windows**
+## 🚀 Quick Start
 
----
+### Prerequisites
+- Windows 10/11
+- [Node.js](https://nodejs.org/) (v16 or higher)
 
-### ⚡ Quick Start
-
-#### 1. One-Click Interactive Launcher (Recommended):
-Simply double-click the following file:
-```cmd
-BidiForge.bat
-```
-The tool opens an interactive menu allowing you to scan installed applications, pick specific apps, search by name, or patch custom paths with automatic process termination and auto-relaunch.
-
----
-
-### 💻 CLI Commands
+### Installation
 
 ```bash
-# Install dependencies (first time only)
+# Clone the repository
+git clone https://github.com/Jenzo0/BidiForge.git
+
+# Navigate to the project directory
+cd BidiForge
+
+# Install dependencies
 npm install
 
-# 1. Interactive CLI Menu / Auto-Patch
-npm start
-
-# 2. Non-destructive scan and status check
-npm run scan
-
-# 3. Clean temporary workspaces and prune obsolete backups
-npm run cleanup
-
-# 4. Rollback a target application to its original backup
-node index.js rollback <app-name-or-path>
-
-# 5. Run the automated test suite
-npm test
+# Run BidiForge
+node index.js
 ```
 
 ---
 
-### 🏗️ Project Architecture
+## 📸 Screenshots
 
-```text
-bidiforge/
-├── BidiForge.bat           # One-click Windows launcher
-├── index.js                # Main CLI entry point & interactive menu
-├── package.json            # Project definition & dependencies
-├── LICENSE                 # MIT License
-├── .gitignore              # Git ignore rules
-│
-├── core/                   # Core Engine
-│   ├── detector.js         # Non-destructive fast ASAR & App scanner
-│   ├── classifier.js       # Runtime type & entry point classifier (CJS/ESM)
-│   ├── engine.js           # Rules aggregator & high-performance DOM observer
-│   ├── status.js           # App status registry
-│   └── logger.js           # Structured logging
-│
-├── patcher/                # Patcher Engine
-│   ├── asar.js             # Atomic ASAR unpack/pack & header validation
-│   ├── backup.js           # SHA-256 backup, manifest tracking & rollback
-│   └── injector.js         # Code injection & syntax checker (node --check)
-│
-├── rules/                  # Modular BiDi Rules
-│   ├── text.js             # Text blocks & headings
-│   ├── lists.js            # Ordered & unordered list markers RTL positioning
-│   ├── tables.js           # Content-aware table alignment
-│   ├── composer.js         # Input fields & contenteditable plaintext isolation
-│   ├── markdown.js         # Markdown elements
-│   └── protected-zones.js  # LTR code zones (Monaco, CodeMirror, Terminals)
-│
-├── profiles/               # Application Profiles
-│   ├── generic-electron.js # Universal fallback strategy
-│   ├── opencode.js         # OpenCode Desktop profile
-│   ├── antigravity.js      # Antigravity IDE profile
-│   └── discord.js          # Discord profile
-│
-└── tests/                  # Automated Test Suite
-    └── runner.js           # 11/11 tests passing
-```
+> *Screenshots coming soon...*
+>
+> <!-- TODO: Add screenshot of Hermes Agent TUI here -->
+> <!-- TODO: Add screenshot of before/after Arabic text rendering here -->
+
+*Before BidiForge:* `م ر ح ب ا`
+*After BidiForge:* `مرحبا`
 
 ---
 
-### 🛡️ Safety & Rollback
-- **Atomic Repacking:** Repacks to `app.asar.tmp` and validates headers before atomic replacement (`renameSync`), preventing corrupt installations.
-- **SHA-256 Backups:** Creates verified backups before modifying any application.
-- **Auto Process Management:** Automatically terminates running processes before patching and relaunches them after completion.
-- **Automatic Rollback:** Instantly restores original ASAR backup if syntax or structural validation fails.
+## 💡 Usage Examples
 
----
-
-### 📜 License
-Licensed under the **[MIT License](LICENSE)**.
-
----
----
-
-## التوثيق باللغة العربية
-
-### 👤 المبرمج والمعلومات
-- **Developed:** Jenzo0
-- **الوصف:** Universal BiDi Compatibility Layer for Electron
-- **الإصدار الحالي:** v3.0.0 (Universal Architecture)
-- **الترخيص:** مفتوح المصدر تحت رخصة MIT
-
----
-
-### 💡 المشاكل التي تعالجها الأداة
-تم تصميم BidiForge لدعم تطبيقات Electron المتوافقة باستخدام التحليل البنيوي لإصلاح مشاكل النصوص العربية والـ RTL (في تطبيقات مثل **Discord**, **VS Code**, **Cursor**, **OpenCode**, **Antigravity**, **Obsidian**, **Slack**, **عملاء الذكاء الاصطناعي**, و**تطبيقات Electron الداخلية**):
-- ❌ **انعكاس النص المختلط:** ظهور الكلمات الإنجليزية أو الأرقام والروابط في بداية الجمل العربية بشكل غير صحيح.
-- ❌ **مواقع القوائم (Lists & Markers):** ظهور أرقام القوائم (`1.` `2.`) والـ Bullets (`•`) على اليسار رغم أن النص عربي.
-- ❌ **صناديق الكتابة (Composer / Input):** محاذاة مؤقتة خاطئة وتوجيه الكتابة من اليسار لليمين أثناء الكتابة بالعربية.
-- ❌ **إغلاق وإعادة تشغيل تلقائية:** إغلاق التطبيق المفتوح أوتوماتيكياً لمنع قفل الملفات، تطبيق الباتش، وإعادة تشغيل التطبيق تلقائياً (`Patch Done!`).
-
----
-
-### 🎯 التطبيقات المدعومة
-تعتمد الأداة على الكشف البنيوي العام لدعم تطبيقات Electron المتوافقة:
-- **Discord**
-- **VS Code**
-- **Cursor**
-- **OpenCode AI Desktop**
-- **Antigravity IDE**
-- **Obsidian**
-- **Slack**
-- **AI clients** (تطبيقات الشات والـ LLM)
-- **Internal Electron apps** (التطبيقات الداخلية للشركات)
-- **تطبيقات Electron المتوافقة على نظام ويندوز**
-
----
-
-### ⚡ طريقة الاستخدام السريعة
-ببساطة قم بتشغيل الملف التالي بالضغط المزدوج:
-```cmd
-BidiForge.bat
-```
-تفتح الأداة واجهة تفاعلية تمكّنك من فحص التطبيقات المثبتة، اختيار تطبيق معين، البحث باسم التطبيق، أو إدخال مسار مباشر مع إغلاق البرنامج وإعادة تشغيله تلقائياً!
-
----
-
-### 💻 أوامر السطر البرمجي (CLI Commands)
+BidiForge provides an intuitive, keyboard-driven CLI. You can also run it with direct commands:
 
 ```bash
-# تثبيت التبعيات (مرة واحدة فقط)
-npm install
+# Launch the main Hermes Agent TUI
+node index.js
 
-# 1. القائمة التفاعلية / التطبيق التلقائي
-npm start
+# Scan for installed Electron applications
+node index.js --scan
 
-# 2. فحص وتتبع حالة التطبيقات بدون تعديل
-npm run scan
+# Patch a specific application
+node index.js --patch "C:\Path\To\App.exe"
 
-# 3. تنظيف الملفات المؤقتة وتقليم النسخ الاحتياطية القديمة
-npm run cleanup
+# Rollback to the previous working state
+node index.js --rollback "C:\Path\To\App.exe"
 
-# 4. لاسترجاع النسخة الأصلية لتطبيق معين (Rollback)
-node index.js rollback <اسم-التطبيق-أو-مساره>
+# Run a full diagnostic health check
+node index.js --health
 
-# 5. تشغيل حزمة الاختبارات الآلية
-npm test
+# Start the Hot-Reload watcher for live patching
+node index.js --watch
 ```
+
+---
+
+## 🏗️ Architecture Overview
+
+BidiForge operates by unpacking Electron's `app.asar` archive, injecting necessary RTL stylesheets and bidirectional text scripts, and safely repacking the archive.
+
+<details>
+<summary>Click to view architecture diagram</summary>
+
+```mermaid
+graph TD
+    A[Electron App] -->|Discovered| B(BidiForge Core)
+    B --> C{ASAR Unpacker}
+    C -->|Extract| D[Source Code]
+    D --> E[CSS/JS Injector]
+    E --> F{ASAR Repacker}
+    F -->|Deploy| A
+    B -.->|Create Snapshot| G[(Snapshot Vault)]
+```
+
+</details>
+
+---
+
+## 🤝 Contributing
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 💖 Credits
+
+Developed and maintained with passion by **[Jenzo0](https://github.com/Jenzo0)**.
+
+<div align="center">
+  <i>"Forging a better web for everyone, right to left."</i>
+</div>
