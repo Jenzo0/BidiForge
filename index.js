@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.3 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.4 Engine)
  * Universal BiDi Compatibility Layer for Electron
- * OpenCode-CLI Inspired TUI: 78-Char Cyberpunk Box Containers, Arrow Key Navigation, Multi-Select Checkboxes, Tips Footer
+ * Centered Cyberpunk Logo Box, Sleek Horizontal Dividers, Live Search (/), Multi-Select Checkboxes, & Theme Switcher
  * 
- * @version 3.3.0
+ * @version 3.4.0
  * @author Jenzo0
  */
 
@@ -23,26 +23,33 @@ const inspector = require('./core/inspector');
 const watcher = require('./core/watcher');
 const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
-const { promptSelect, promptMultiSelect, createSpinner, printBox, formatBoxLine, beep, C } = require('./ui/menu');
+const updater = require('./core/updater');
+const themeEngine = require('./ui/theme');
+const { promptSelect, promptMultiSelect, createSpinner, formatRow, printHeader, printFooter, beep } = require('./ui/menu');
 
-const VERSION = '3.3.0';
+const VERSION = '3.4.0';
 const DEVELOPER = 'Jenzo0';
 
 /**
- * Print stylized Cyberpunk ASCII banner with 100% pixel-perfect 78-char symmetry
+ * Print centered Cyberpunk ASCII logo banner box with 100% pixel-perfect symmetry
  */
 function banner() {
+  const T = themeEngine.getTheme();
+  const cols = (process.stdout && process.stdout.columns) ? process.stdout.columns : 80;
+  const boxWidth = 70;
+  const pad = ' '.repeat(Math.max(0, Math.floor((cols - boxWidth) / 2)));
+
   console.log('');
-  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗${C.reset}           ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝${C.reset}           ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ${C.reset}           ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ${C.reset}           ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗${C.reset}           ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║ ${C.yellow}${C.bold}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝${C.reset}           ${C.cyan}║${C.reset}`);
-  console.log(`${C.cyan}║                   ${C.white}${C.bold}Universal BiDi Compatibility Layer v${VERSION}${C.reset}${C.cyan}                    ║${C.reset}`);
-  console.log(`${C.cyan}║                               ${C.yellow}Developer: ${DEVELOPER}${C.reset}${C.cyan}                                ║${C.reset}`);
-  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════════════════╝${C.reset}`);
+  console.log(pad + `${T.border}╔════════════════════════════════════════════════════════════════════╗${T.reset}`);
+  console.log(pad + `${T.border}║ ${T.title}${T.bold}██████╗ ██╗██████╗ ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗ ${T.reset}${T.border}║${T.reset}`);
+  console.log(pad + `${T.border}║ ${T.title}${T.bold}██╔══██╗██║██╔══██╗██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝ ${T.reset}${T.border}║${T.reset}`);
+  console.log(pad + `${T.border}║ ${T.title}${T.bold}██████╔╝██║██║  ██║██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗   ${T.reset}${T.border}║${T.reset}`);
+  console.log(pad + `${T.border}║ ${T.title}${T.bold}██╔══██╗██║██║  ██║██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝   ${T.reset}${T.border}║${T.reset}`);
+  console.log(pad + `${T.border}║ ${T.title}${T.bold}██████╔╝██║██████╔╝██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗ ${T.reset}${T.border}║${T.reset}`);
+  console.log(pad + `${T.border}║ ${T.title}${T.bold}╚═════╝ ╚═╝╚═════╝ ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ${T.reset}${T.border}║${T.reset}`);
+  console.log(pad + `${T.border}║                ${T.text}${T.bold}Universal BiDi Compatibility Layer v${VERSION}${T.reset}${T.border}            ║${T.reset}`);
+  console.log(pad + `${T.border}║                            ${T.title}Developer: ${DEVELOPER}${T.reset}${T.border}                       ║${T.reset}`);
+  console.log(pad + `${T.border}╚════════════════════════════════════════════════════════════════════╝${T.reset}`);
   console.log('');
 }
 
@@ -80,6 +87,7 @@ function isAppRunning(appInfo) {
  */
 function killAppProcess(appInfo) {
   if (!appInfo || !appInfo.name) return false;
+  const T = themeEngine.getTheme();
   
   let exeNames = [];
   const baseName = appInfo.name.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -99,7 +107,7 @@ function killAppProcess(appInfo) {
     try {
       const output = execSync(`tasklist /FI "IMAGENAME eq ${exe}"`, { stdio: 'pipe' }).toString();
       if (output.toLowerCase().includes(exe.toLowerCase())) {
-        console.log(`  ${C.yellow}⚡ Terminating open process ${exe} to release file lock...${C.reset}`);
+        console.log(`  ${T.warning}⚡ Terminating open process ${exe} to release file lock...${T.reset}`);
         execSync(`taskkill /F /IM "${exe}"`, { stdio: 'pipe' });
         killedAny = true;
       }
@@ -118,6 +126,7 @@ function killAppProcess(appInfo) {
  */
 function relaunchAppProcess(appInfo) {
   if (!appInfo || !appInfo.path) return;
+  const T = themeEngine.getTheme();
   
   try {
     let exePath = null;
@@ -140,17 +149,17 @@ function relaunchAppProcess(appInfo) {
     }
     
     if (exePath && fs.existsSync(exePath)) {
-      console.log(`  ${C.cyan}🚀 Relaunching ${appInfo.name}...${C.reset}`);
+      console.log(`  ${T.border}🚀 Relaunching ${appInfo.name}...${T.reset}`);
       const child = spawn(exePath, [], { detached: true, stdio: 'ignore' });
       child.unref();
-      console.log(`  ${C.green}✓ Patch Done & ${appInfo.name} Relaunched!${C.reset}\n`);
+      console.log(`  ${T.success}✓ Patch Done & ${appInfo.name} Relaunched!${T.reset}\n`);
       beep();
     } else {
-      console.log(`  ${C.green}✓ Patch Done!${C.reset}\n`);
+      console.log(`  ${T.success}✓ Patch Done!${T.reset}\n`);
       beep();
     }
   } catch (_) {
-    console.log(`  ${C.green}✓ Patch Done!${C.reset}\n`);
+    console.log(`  ${T.success}✓ Patch Done!${T.reset}\n`);
     beep();
   }
 }
@@ -160,6 +169,7 @@ function relaunchAppProcess(appInfo) {
  */
 async function patch(target = null, relaunch = true, force = false) {
   logger.init();
+  const T = themeEngine.getTheme();
   
   let apps = detector.detectAll();
   
@@ -173,19 +183,19 @@ async function patch(target = null, relaunch = true, force = false) {
   }
   
   if (apps.length === 0) {
-    console.log(`${C.yellow}✖ No matching Electron applications found.${C.reset}`);
+    console.log(`${T.warning}✖ No matching Electron applications found.${T.reset}`);
     return { patched: 0, skipped: 0, failed: 0 };
   }
   
   const results = { patched: [], skipped: [], failed: [] };
   
   for (const appInfo of apps) {
-    console.log(`${C.cyan}------------------------------------------------------------------------------${C.reset}`);
-    console.log(` ${C.bold}Target:${C.reset} ${C.white}${appInfo.name}${C.reset} (v${appInfo.version})`);
+    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+    console.log(` ${T.bold}Target:${T.reset} ${T.text}${appInfo.name}${T.reset} (v${appInfo.version})`);
     
     const asarPath = path.join(appInfo.path, 'resources', 'app.asar');
     if (!fs.existsSync(asarPath)) {
-      console.log(`  ${C.red}✖ ASAR file not found for ${appInfo.name}${C.reset}`);
+      console.log(`  ${T.danger}✖ ASAR file not found for ${appInfo.name}${T.reset}`);
       results.failed.push(appInfo);
       continue;
     }
@@ -194,14 +204,14 @@ async function patch(target = null, relaunch = true, force = false) {
     const updateCheck = status.checkSafeUpdateStatus(appInfo.path, currentHash, appInfo.version, asarPath);
 
     if (updateCheck.state === 'PATCHED_VERIFIED' && !force) {
-      console.log(`  ${C.yellow}YES → Already patched (SHA-256 hash & file marker verified)${C.reset}\n`);
+      console.log(`  ${T.warning}YES → Already patched (SHA-256 hash & file marker verified)${T.reset}\n`);
       results.skipped.push(appInfo);
       continue;
     }
 
     if (updateCheck.state === 'APP_UPDATED') {
-      console.log(`  ${C.magenta}⚡ Safe Update Detection: Application update detected for ${appInfo.name}!${C.reset}`);
-      console.log(`  ${C.yellow}🔄 Auto-Repair triggered: Re-analyzing and patching updated ASAR structure...${C.reset}`);
+      console.log(`  ${T.accent}⚡ Safe Update Detection: Application update detected for ${appInfo.name}!${T.reset}`);
+      console.log(`  ${T.warning}🔄 Auto-Repair triggered: Re-analyzing and patching updated ASAR structure...${T.reset}`);
     }
 
     killAppProcess(appInfo);
@@ -256,7 +266,7 @@ async function patch(target = null, relaunch = true, force = false) {
       if (relaunch) {
         relaunchAppProcess(appInfo);
       } else {
-        console.log(`  ${C.green}✓ Successfully patched ${appInfo.name}!${C.reset}\n`);
+        console.log(`  ${T.success}✓ Successfully patched ${appInfo.name}!${T.reset}\n`);
       }
     } catch (e) {
       spinner.fail(`Failed to patch ${appInfo.name}: ${e.message}`);
@@ -267,33 +277,34 @@ async function patch(target = null, relaunch = true, force = false) {
     }
   }
   
-  const summaryLines = [
-    `${C.green}✓ Patched Applications: ${results.patched.length}${C.reset}`,
-    `${C.yellow}• Skipped (Patched):    ${results.skipped.length}${C.reset}`,
-    `${C.red}✖ Failed Applications:  ${results.failed.length}${C.reset}`,
-  ];
-  printBox(summaryLines, 'SUMMARY REPORT', 'All patched applications are now active with Arabic BiDi support');
+  printHeader('SUMMARY REPORT');
+  console.log(formatRow(`${T.success}✓ Patched Applications:${T.reset}`, `${T.bold}${results.patched.length}${T.reset}`));
+  console.log(formatRow(`${T.warning}• Skipped (Patched):${T.reset}`, `${T.bold}${results.skipped.length}${T.reset}`));
+  console.log(formatRow(`${T.danger}✖ Failed Applications:${T.reset}`, `${T.bold}${results.failed.length}${T.reset}`));
+  printFooter('All patched applications are now active with Arabic BiDi support');
   console.log('');
   
   return results;
 }
 
 /**
- * Scan installed applications and display 78-char Cyberpunk Boxed table with status badges
+ * Scan installed applications and display clean divider table with status badges
  */
 function scan() {
   logger.init();
+  const T = themeEngine.getTheme();
   
-  console.log(`${C.cyan}• Starting Universal Electron application scan...${C.reset}`);
+  console.log(`${T.border}• Starting Universal Electron application scan...${T.reset}`);
   const apps = detector.detectAll();
-  console.log(`${C.green}• Found ${apps.length} Electron application(s)${C.reset}\n`);
+  console.log(`${T.success}• Found ${apps.length} Electron application(s)${T.reset}\n`);
   
   if (apps.length === 0) {
-    console.log(`${C.yellow}No Electron applications discovered on this system.${C.reset}`);
+    console.log(`${T.warning}No Electron applications discovered on this system.${T.reset}`);
     return apps;
   }
   
-  const boxLines = [];
+  printHeader('DISCOVERED ELECTRON APPLICATIONS & STATUS');
+  
   apps.forEach((app, idx) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
@@ -301,20 +312,18 @@ function scan() {
     
     let statusTag = '';
     if (updateCheck.state === 'PATCHED_VERIFIED') {
-      statusTag = `${C.green}✓ Compatible${C.reset}  ${C.cyan}★ (Patched)${C.reset}`;
+      statusTag = `${T.success}✓ Compatible${T.reset}  ${T.border}★ (Patched)${T.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
-      statusTag = `${C.magenta}[VENDOR UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
+      statusTag = `${T.accent}[VENDOR UPDATE DETECTED]${T.reset}  ${T.warning}⚡ Auto-Repair Ready${T.reset}`;
     } else {
-      statusTag = `${C.green}✓ Compatible${C.reset}`;
+      statusTag = `${T.success}✓ Compatible${T.reset}`;
     }
     
-    boxLines.push({
-      text: `${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})`,
-      tag: statusTag,
-    });
+    const label = `${T.border}[${idx + 1}]${T.reset} ${T.text}${T.bold}${app.name}${T.reset} (v${app.version})`;
+    console.log(formatRow(label, statusTag));
   });
   
-  printBox(boxLines, 'DISCOVERED ELECTRON APPLICATIONS & STATUS', 'Select Option [2] in main menu to interactively patch applications');
+  printFooter('Select Option [2] in main menu to interactively patch applications');
   console.log('');
   return apps;
 }
@@ -323,6 +332,7 @@ function scan() {
  * Build option list with status tags for promptSelect
  */
 function getAppSelectOptions(apps) {
+  const T = themeEngine.getTheme();
   return apps.map((app, idx) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
@@ -330,11 +340,11 @@ function getAppSelectOptions(apps) {
     
     let tag = '';
     if (updateCheck.state === 'PATCHED_VERIFIED') {
-      tag = `${C.green}✓ Compatible${C.reset}  ${C.cyan}★ (Patched)${C.reset}`;
+      tag = `${T.success}✓ Compatible${T.reset}  ${T.border}★ (Patched)${T.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
-      tag = `${C.magenta}[VENDOR UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
+      tag = `${T.accent}[VENDOR UPDATE DETECTED]${T.reset}  ${T.warning}⚡ Auto-Repair Ready${T.reset}`;
     } else {
-      tag = `${C.green}✓ Compatible${C.reset}`;
+      tag = `${T.success}✓ Compatible${T.reset}`;
     }
     
     return {
@@ -350,7 +360,8 @@ function getAppSelectOptions(apps) {
  */
 function runHealthInspection(target = null) {
   banner();
-  console.log(`${C.cyan}• Running BiDi Diagnostic Health Inspector...${C.reset}\n`);
+  const T = themeEngine.getTheme();
+  console.log(`${T.border}• Running BiDi Diagnostic Health Inspector...${T.reset}\n`);
   
   let apps = detector.detectAll();
   if (target && typeof target === 'string') {
@@ -360,26 +371,25 @@ function runHealthInspection(target = null) {
   }
 
   if (apps.length === 0) {
-    console.log(`${C.yellow}✖ No applications found for health inspection.${C.reset}`);
+    console.log(`${T.warning}✖ No applications found for health inspection.${T.reset}`);
     return;
   }
 
   for (const app of apps) {
     const report = inspector.inspectApp(app);
-    const scoreColor = report.score >= 80 ? C.green : (report.score >= 50 ? C.yellow : C.red);
+    const scoreColor = report.score >= 80 ? T.success : (report.score >= 50 ? T.warning : T.danger);
 
-    const boxLines = [
-      `Health Score: ${scoreColor}${report.score}/100 (${report.grade})${C.reset}  —  Status: ${scoreColor}${report.status}${C.reset}`,
-      `Inspected At: ${new Date(report.inspectedAt).toLocaleString()}`,
-      `────────────────────────────────────────────────────────────`,
-    ];
+    printHeader(`HEALTH REPORT: ${report.appName} (v${report.appVersion})`);
+    console.log(`  Health Score: ${scoreColor}${report.score}/100 (${report.grade})${T.reset}  —  Status: ${scoreColor}${report.status}${T.reset}`);
+    console.log(`  Inspected At: ${new Date(report.inspectedAt).toLocaleString()}`);
+    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
 
     report.checks.forEach(check => {
-      const symbol = check.passed ? `${C.green}✓${C.reset}` : `${C.red}✖${C.reset}`;
-      boxLines.push(`${symbol} ${C.bold}${check.name}:${C.reset} ${check.detail}`);
+      const symbol = check.passed ? `${T.success}✓${T.reset}` : `${T.danger}✖${T.reset}`;
+      console.log(`  ${symbol} ${T.bold}${check.name}:${T.reset} ${check.detail}`);
     });
 
-    printBox(boxLines, `HEALTH REPORT: ${report.appName} (v${report.appVersion})`, 'High score indicates optimal Arabic RTL injection');
+    printFooter('High score indicates optimal Arabic RTL injection');
     console.log('');
   }
 }
@@ -389,16 +399,17 @@ function runHealthInspection(target = null) {
  */
 async function handleAppSelection(rl, app) {
   if (!app) return;
+  const T = themeEngine.getTheme();
   
   const asarPath = path.join(app.path, 'resources', 'app.asar');
   const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
   const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
 
   if (updateCheck.state === 'APP_UPDATED') {
-    console.log(`\n  ${C.magenta}${C.bold}⚡ Vendor Application Update Detected!${C.reset}`);
-    console.log(`  ${C.white}${app.name}${C.reset} was updated by vendor (${updateCheck.oldVersion ? 'v' + updateCheck.oldVersion : 'older'} ➔ v${app.version}).`);
+    console.log(`\n  ${T.accent}${T.bold}⚡ Vendor Application Update Detected!${T.reset}`);
+    console.log(`  ${T.text}${app.name}${T.reset} was updated by vendor (${updateCheck.oldVersion ? 'v' + updateCheck.oldVersion : 'older'} ➔ v${app.version}).`);
     if (updateCheck.patchedAt) {
-      console.log(`  ${C.dim}Previous Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
+      console.log(`  ${T.dim}Previous Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${T.reset}`);
     }
     console.log('');
     
@@ -415,10 +426,10 @@ async function handleAppSelection(rl, app) {
   }
 
   if (updateCheck.state === 'PATCHED_VERIFIED') {
-    console.log(`\n  ${C.yellow}${C.bold}YES → Already patched${C.reset}`);
-    console.log(`  ${C.white}${app.name}${C.reset} (v${app.version}) is currently patched & verified.`);
+    console.log(`\n  ${T.warning}${T.bold}YES → Already patched${T.reset}`);
+    console.log(`  ${T.text}${app.name}${T.reset} (v${app.version}) is currently patched & verified.`);
     if (updateCheck.patchedAt) {
-      console.log(`  ${C.dim}Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${C.reset}`);
+      console.log(`  ${T.dim}Patch Date: ${new Date(updateCheck.patchedAt).toLocaleString()}${T.reset}`);
     }
     console.log('');
     
@@ -438,8 +449,8 @@ async function handleAppSelection(rl, app) {
 
   const running = isAppRunning(app);
   if (running) {
-    console.log(`\n  ${C.yellow}⚡ Notice: ${app.name} is currently running.${C.reset}`);
-    console.log(`  ${C.dim}BidiForge will automatically terminate ${app.name}, apply the BiDi patch, and relaunch it.${C.reset}\n`);
+    console.log(`\n  ${T.warning}⚡ Notice: ${app.name} is currently running.${T.reset}`);
+    console.log(`  ${T.dim}BidiForge will automatically terminate ${app.name}, apply the BiDi patch, and relaunch it.${T.reset}\n`);
   }
 
   const choices = [
@@ -456,8 +467,9 @@ async function handleAppSelection(rl, app) {
  * Patch custom path specified by user
  */
 async function patchCustomPath(customPath) {
+  const T = themeEngine.getTheme();
   if (!customPath || !fs.existsSync(customPath)) {
-    console.log(`${C.red}[X] ERROR: Specified path does not exist.${C.reset}`);
+    console.log(`${T.danger}[X] ERROR: Specified path does not exist.${T.reset}`);
     return;
   }
   
@@ -468,11 +480,11 @@ async function patchCustomPath(customPath) {
   
   const appInfo = detector.detectElectronApp(appDir);
   if (!appInfo) {
-    console.log(`${C.red}[X] ERROR: Could not detect valid Electron application structure at specified path.${C.reset}`);
+    console.log(`${T.danger}[X] ERROR: Could not detect valid Electron application structure at specified path.${T.reset}`);
     return;
   }
   
-  console.log(`${C.green}✓ Compatible Electron Structure Detected: ${appInfo.name} (v${appInfo.version})${C.reset}`);
+  console.log(`${T.success}✓ Compatible Electron Structure Detected: ${appInfo.name} (v${appInfo.version})${T.reset}`);
   await patch(appInfo, true, true);
 }
 
@@ -482,6 +494,7 @@ async function patchCustomPath(customPath) {
 function rollbackApp(targetApp) {
   logger.init();
   banner();
+  const T = themeEngine.getTheme();
   
   if (!targetApp) {
     console.log('Usage: node index.js rollback <app-name-or-path>');
@@ -496,10 +509,10 @@ function rollbackApp(targetApp) {
   
   if (res.success) {
     status.update(targetPath, { status: 'RESTORED' });
-    console.log(`${C.green}✓ Successfully restored original backup for ${targetApp}!${C.reset}`);
+    console.log(`${T.success}✓ Successfully restored original backup for ${targetApp}!${T.reset}`);
     beep();
   } else {
-    console.log(`${C.red}[X] Rollback failed: ${res.error}${C.reset}`);
+    console.log(`${T.danger}[X] Rollback failed: ${res.error}${T.reset}`);
   }
 }
 
@@ -509,10 +522,11 @@ function rollbackApp(targetApp) {
 function cleanup() {
   logger.init();
   banner();
+  const T = themeEngine.getTheme();
   
-  console.log(`${C.cyan}• Cleaning up temporary workspaces & old backups...${C.reset}`);
+  console.log(`${T.border}• Cleaning up temporary workspaces & old backups...${T.reset}`);
   const res = backup.cleanup();
-  console.log(`${C.green}✓ Cleaned obsolete backups (Kept: ${res.kept}).${C.reset}`);
+  console.log(`${T.success}✓ Cleaned obsolete backups (Kept: ${res.kept}).${T.reset}`);
   beep();
 }
 
@@ -521,11 +535,34 @@ function cleanup() {
  */
 function runTests() {
   banner();
-  console.log(`${C.cyan}• Running Automated Test Suite...${C.reset}`);
+  const T = themeEngine.getTheme();
+  console.log(`${T.border}• Running Automated Test Suite...${T.reset}`);
   try {
     execSync('node tests/runner.js', { stdio: 'inherit' });
   } catch (e) {
-    console.log(`${C.red}[X] Diagnostic tests failed.${C.reset}`);
+    console.log(`${T.danger}[X] Diagnostic tests failed.${T.reset}`);
+  }
+}
+
+/**
+ * Theme selection handler
+ */
+async function handleThemeSelection() {
+  banner();
+  const T = themeEngine.getTheme();
+  const themes = themeEngine.listThemes();
+  const choices = themes.map(t => ({
+    label: t.name,
+    tag: t.active ? `${T.success}★ Active${T.reset}` : '',
+    value: t.key,
+  }));
+  choices.push({ label: '* Back to Main Menu', tag: '' });
+
+  const idx = await promptSelect(choices, 'BidiForge Theme Palette Switcher:', banner);
+  if (idx >= 0 && idx < themes.length) {
+    themeEngine.setTheme(themes[idx].key);
+    console.log(`\n  ${themeEngine.getTheme().success}✓ Theme changed to ${themes[idx].name}!${themeEngine.getTheme().reset}\n`);
+    beep();
   }
 }
 
@@ -537,9 +574,10 @@ function askQuestion(rl, query) {
 }
 
 /**
- * Interactive Menu Workflow with Arrow Key Keyboard Navigation (↑/↓/Enter)
+ * Interactive Menu Workflow with Arrow Key Keyboard Navigation & Search Filter
  */
 async function interactiveMenu() {
+  const T = themeEngine.getTheme();
   const menuOptions = [
     '⚡ [1] Fast Scan & List Compatible Applications',
     '⚙️ [2] Select Applications to Patch (Multi-Checkboxes [x])',
@@ -553,16 +591,17 @@ async function interactiveMenu() {
     '📦 [10] Snapshot Restore Vault Manager (Multi-Version Rollback)',
     '🧹 [11] Clean Temporary Files & Prune Old Backups',
     '🧪 [12] Run Diagnostic Test Suite',
+    '🎨 [13] Change CLI Color Theme Palette',
     '❌ [0] Exit BidiForge',
   ];
 
   let running = true;
   while (running) {
-    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.3 Main Menu — OpenCode CLI TUI Engine:', banner);
+    const selectedIdx = await promptSelect(menuOptions, 'BidiForge v3.4 Main Menu — OpenCode CLI TUI Engine:', banner);
     
-    if (selectedIdx === -1 || selectedIdx === 12) {
+    if (selectedIdx === -1 || selectedIdx === 13) {
       running = false;
-      console.log(`\n${C.cyan}Thank you for using BidiForge!${C.reset}`);
+      console.log(`\n${themeEngine.getTheme().border}Thank you for using BidiForge!${themeEngine.getTheme().reset}`);
       break;
     }
     
@@ -595,13 +634,13 @@ async function interactiveMenu() {
       case 3: { // Search
         banner();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-        const nameQuery = (await askQuestion(rl, `\n${C.yellow}Enter application name to search (e.g. discord, slack, obsidian): ${C.reset}`)).trim();
+        const nameQuery = (await askQuestion(rl, `\n${themeEngine.getTheme().warning}Enter application name to search (e.g. discord, slack, obsidian): ${themeEngine.getTheme().reset}`)).trim();
         if (nameQuery) {
           const apps = detector.detectAll().filter(a => a.name.toLowerCase().includes(nameQuery.toLowerCase()));
           if (apps.length > 0) {
             await handleAppSelection(rl, apps[0]);
           } else {
-            console.log(`${C.red}[X] No matching applications found for "${nameQuery}".${C.reset}`);
+            console.log(`${themeEngine.getTheme().danger}[X] No matching applications found for "${nameQuery}".${themeEngine.getTheme().reset}`);
           }
         }
         rl.close();
@@ -611,7 +650,7 @@ async function interactiveMenu() {
       case 4: { // Custom Path
         banner();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-        const customPath = (await askQuestion(rl, `\n${C.yellow}Enter direct application folder or ASAR file path: ${C.reset}`)).trim();
+        const customPath = (await askQuestion(rl, `\n${themeEngine.getTheme().warning}Enter direct application folder or ASAR file path: ${themeEngine.getTheme().reset}`)).trim();
         if (customPath) await patchCustomPath(customPath);
         rl.close();
         break;
@@ -620,7 +659,7 @@ async function interactiveMenu() {
       case 5: { // Rollback
         banner();
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-        const appName = (await askQuestion(rl, `\n${C.yellow}Enter application name or path to rollback: ${C.reset}`)).trim();
+        const appName = (await askQuestion(rl, `\n${themeEngine.getTheme().warning}Enter application name or path to rollback: ${themeEngine.getTheme().reset}`)).trim();
         if (appName) rollbackApp(appName);
         rl.close();
         break;
@@ -648,10 +687,10 @@ async function interactiveMenu() {
         banner();
         const regRes = shell.register();
         if (regRes.success) {
-          console.log(`\n${C.green}✓ ${regRes.message}${C.reset}`);
+          console.log(`\n${themeEngine.getTheme().success}✓ ${regRes.message}${themeEngine.getTheme().reset}`);
           beep();
         } else {
-          console.log(`\n${C.red}✖ Registration failed: ${regRes.error}${C.reset}`);
+          console.log(`\n${themeEngine.getTheme().danger}✖ Registration failed: ${regRes.error}${themeEngine.getTheme().reset}`);
         }
         break;
       }
@@ -659,12 +698,12 @@ async function interactiveMenu() {
       case 9: { // Vault Manager
         banner();
         const snapshots = vault.listSnapshots();
-        console.log(`\n${C.cyan}• Vault Snapshot Registry (${snapshots.length} snapshots)${C.reset}\n`);
-        const snapshotLines = snapshots.map((s, idx) => ({
-          text: `${C.cyan}[${idx+1}]${C.reset} ${C.white}${C.bold}${s.appName}${C.reset} (v${s.appVersion})`,
-          tag: `${C.yellow}${s.id}${C.reset}`,
-        }));
-        printBox(snapshotLines, 'VAULT SNAPSHOTS', 'Use "node index.js vault restore <id>" to restore any snapshot');
+        printHeader(`VAULT SNAPSHOT REGISTRY (${snapshots.length} snapshots)`);
+        snapshots.forEach((s, idx) => {
+          const label = `${themeEngine.getTheme().border}[${idx+1}]${themeEngine.getTheme().reset} ${themeEngine.getTheme().text}${themeEngine.getTheme().bold}${s.appName}${themeEngine.getTheme().reset} (v${s.appVersion})`;
+          console.log(formatRow(label, `${themeEngine.getTheme().warning}${s.id}${themeEngine.getTheme().reset}`));
+        });
+        printFooter('Use "node index.js vault restore <id>" to restore any snapshot');
         break;
       }
 
@@ -675,11 +714,15 @@ async function interactiveMenu() {
       case 11: // Tests
         runTests();
         break;
+
+      case 12: // Theme
+        await handleThemeSelection();
+        break;
     }
     
     if (running) {
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      await askQuestion(rl, `\n${C.dim}Press Enter to return to main menu...${C.reset}`);
+      await askQuestion(rl, `\n${themeEngine.getTheme().dim}Press Enter to return to main menu...${themeEngine.getTheme().reset}`);
       rl.close();
     }
   }
@@ -725,6 +768,18 @@ async function interactiveMenu() {
         watcher.watch(args[1] || null);
         break;
 
+      case 'theme':
+        if (args[1]) {
+          if (themeEngine.setTheme(args[1])) {
+            console.log(`✓ Theme updated to ${args[1]}`);
+          } else {
+            console.log(`✖ Unknown theme. Available: ${themeEngine.listThemes().map(t=>t.key).join(', ')}`);
+          }
+        } else {
+          await handleThemeSelection();
+        }
+        break;
+
       case 'register-shell':
         banner();
         console.log(shell.register().message);
@@ -740,10 +795,10 @@ async function interactiveMenu() {
         if (args[1] === 'restore' && args[2]) {
           const res = vault.restoreSnapshot(args[2]);
           if (res.success) {
-            console.log(`${C.green}✓ Restored snapshot ${res.snapshot.id} for ${res.snapshot.appName}!${C.reset}`);
+            console.log(`${themeEngine.getTheme().success}✓ Restored snapshot ${res.snapshot.id} for ${res.snapshot.appName}!${themeEngine.getTheme().reset}`);
             beep();
           } else {
-            console.log(`${C.red}✖ Vault restoration failed: ${res.error}${C.reset}`);
+            console.log(`${themeEngine.getTheme().danger}✖ Vault restoration failed: ${res.error}${themeEngine.getTheme().reset}`);
           }
         } else {
           const list = vault.listSnapshots(args[1] || '');
@@ -791,6 +846,7 @@ async function interactiveMenu() {
         console.log('  scan                Scan and list detected Electron apps');
         console.log('  health [app]        Run BiDi Diagnostic Health Inspector');
         console.log('  watch [app]         Start live hot-reload watcher');
+        console.log('  theme [name]        Switch CLI color palette theme');
         console.log('  register-shell      Add right-click menu in Windows Explorer');
         console.log('  unregister-shell    Remove right-click menu from Windows Explorer');
         console.log('  vault [restore <id>] Manage multi-version snapshot restore vault');

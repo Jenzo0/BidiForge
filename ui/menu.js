@@ -1,33 +1,19 @@
 /**
- * BidiForge — Interactive CLI UI Engine (v3.3 Engine - Inspired by OpenCode CLI & TUI)
- * Cyberpunk Box Containers, Arrow key navigation (↑/↓), multi-select checkboxes, animated spinners, & status badges
+ * BidiForge — Interactive CLI UI Engine (v3.4 Engine - Clean Divider Layout)
+ * Sleek divider line layout, search-as-you-type (/ filter), multi-select checkboxes, & theme engine
  * 
- * @version 3.3.0
+ * @version 3.4.0
  * @author Jenzo0
  */
 
 const readline = require('readline');
-
-// ANSI terminal color codes & styling
-const C = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  cyan: '\x1b[36;1m',
-  green: '\x1b[32;1m',
-  yellow: '\x1b[33;1m',
-  red: '\x1b[31;1m',
-  magenta: '\x1b[35;1m',
-  white: '\x1b[37;1m',
-  bgCyan: '\x1b[46;30;1m',
-  bgBlue: '\x1b[44;37;1m',
-};
+const themeEngine = require('./theme');
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const BOX_WIDTH = 78;
+const DEFAULT_WIDTH = 76;
 
 /**
- * Strip ANSI escape codes from string to get true visual string
+ * Strip ANSI escape codes from string
  * @param {string} str - String with ANSI codes
  * @returns {string} Clean string
  */
@@ -58,65 +44,60 @@ function getVisualWidth(str) {
 }
 
 /**
- * Format a single line of text enclosed in a 78-char Cyberpunk Box with 100% border alignment
- * @param {string} content - Left line text
- * @param {string} tag - Optional right-aligned tag or badge
- * @param {number} boxWidth - Target box width
- * @returns {string} Formatted box line
+ * Format a single clean line with left label & right-aligned status badge
+ * @param {string} label - Left label text
+ * @param {string} tag - Right badge text
+ * @param {number} width - Row width
+ * @returns {string} Formatted line
  */
-function formatBoxLine(content = '', tag = '', boxWidth = BOX_WIDTH) {
-  const visContent = getVisualWidth(content);
+function formatRow(label = '', tag = '', width = DEFAULT_WIDTH) {
+  const visLabel = getVisualWidth(label);
   const visTag = getVisualWidth(tag);
   
   if (tag) {
-    const totalVis = visContent + visTag;
-    const padLen = Math.max(1, boxWidth - 4 - totalVis);
-    return `${C.cyan}║${C.reset} ${content}${' '.repeat(padLen)}${tag} ${C.cyan}║${C.reset}`;
+    const padLen = Math.max(1, width - visLabel - visTag);
+    return `  ${label}${' '.repeat(padLen)}${tag}`;
   } else {
-    const padLen = Math.max(0, boxWidth - 4 - visContent);
-    return `${C.cyan}║${C.reset} ${content}${' '.repeat(padLen)} ${C.cyan}║${C.reset}`;
+    return `  ${label}`;
   }
 }
 
 /**
- * Print a full Cyberpunk Box container with title and tips footer
- * @param {Array} lines - Array of line strings or objects { text, tag }
- * @param {string} title - Optional title header
- * @param {string} tip - Optional footer tip message
+ * Print sleek horizontal divider sections
  */
-function printBox(lines = [], title = '', tip = '') {
-  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════════════════╗${C.reset}`);
+function printHeader(title = '') {
+  const T = themeEngine.getTheme();
+  console.log(`${T.border}════════════════════════════════════════════════════════════════════════════${T.reset}`);
   if (title) {
-    console.log(formatBoxLine(`${C.yellow}${C.bold}${title}${C.reset}`));
-    console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════════════════╣${C.reset}`);
+    console.log(`  ${T.title}${T.bold}${title}${T.reset}`);
+    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
   }
-  lines.forEach(line => {
-    if (typeof line === 'object') {
-      console.log(formatBoxLine(line.text || line.label || '', line.tag || ''));
-    } else {
-      console.log(formatBoxLine(line));
-    }
-  });
-  if (tip) {
-    console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════════════════╣${C.reset}`);
-    console.log(formatBoxLine(`${C.yellow}💡 Tip:${C.reset} ${C.dim}${tip}${C.reset}`));
+}
+
+function printFooter(tipText = '') {
+  const T = themeEngine.getTheme();
+  if (tipText) {
+    console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+    console.log(`  ${T.title}💡 Tip:${T.reset} ${T.dim}${tipText}${T.reset}`);
   }
-  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`${T.border}════════════════════════════════════════════════════════════════════════════${T.reset}`);
 }
 
 /**
- * Interactive Arrow-Key Menu Selector inside 78-char Cyberpunk Box Containers (↑ Up / ↓ Down / Enter / Esc)
- * @param {Array} options - List of string options or objects { label, tag, detail, value }
+ * Interactive Arrow-Key Menu Selector with Live Search (/ key)
+ * @param {Array} options - List of string options or objects { label, tag, value }
  * @param {string} promptText - Prompt header title
- * @param {function} headerFn - Optional banner/header function to call on render
+ * @param {function} headerFn - Banner callback
  * @param {string} tipText - Footer shortcut tips
  * @returns {Promise<number>} Selected index
  */
-function promptSelect(options, promptText = 'Select an option using ↑/↓ arrows and press Enter:', headerFn = null, tipText = 'Use ↑/↓ Arrow Keys to navigate, Enter to select, Esc to back') {
+function promptSelect(options, promptText = 'Select an option using ↑/↓ arrows and press Enter:', headerFn = null, tipText = 'Use ↑/↓ Arrow Keys, / to search, Enter to select, Esc to back') {
   return new Promise(resolve => {
-    let selected = 0;
-    
-    // Check TTY capability
+    let selectedIndex = 0;
+    let searchQuery = '';
+    let isSearchMode = false;
+    const T = themeEngine.getTheme();
+
     if (!process.stdin.isTTY) {
       resolve(0);
       return;
@@ -126,32 +107,50 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
     readline.emitKeypressEvents(process.stdin);
     process.stdin.resume();
 
+    function getFilteredOptions() {
+      if (!searchQuery) return options.map((opt, idx) => ({ opt, originalIndex: idx }));
+      const q = searchQuery.toLowerCase();
+      return options
+        .map((opt, idx) => ({ opt, originalIndex: idx }))
+        .filter(item => {
+          const label = typeof item.opt === 'string' ? item.opt : item.opt.label;
+          return label.toLowerCase().includes(q);
+        });
+    }
+
     function render() {
       console.clear();
       if (typeof headerFn === 'function') {
         headerFn();
       }
 
-      console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════════════════╗${C.reset}`);
-      console.log(formatBoxLine(`${C.yellow}${C.bold}${promptText}${C.reset}`));
-      console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════════════════╣${C.reset}`);
+      printHeader(promptText);
 
-      options.forEach((opt, idx) => {
-        const label = typeof opt === 'string' ? opt : opt.label;
-        const tag = (typeof opt === 'object' && opt.tag) ? opt.tag : '';
+      if (isSearchMode) {
+        console.log(`  ${T.title}/ Search Filter:${T.reset} ${T.bold}${searchQuery}_${T.reset}`);
+        console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
+      }
 
-        if (idx === selected) {
-          const selText = `${C.cyan}${C.bold}❯ ${label}${C.reset}`;
-          console.log(formatBoxLine(selText, tag));
-        } else {
-          const dimText = `  ${C.dim}${label}${C.reset}`;
-          console.log(formatBoxLine(dimText, tag));
-        }
-      });
+      const filtered = getFilteredOptions();
+      if (filtered.length === 0) {
+        console.log(`  ${T.warning}No items matching "${searchQuery}"${T.reset}`);
+      } else {
+        if (selectedIndex >= filtered.length) selectedIndex = 0;
+        filtered.forEach((item, idx) => {
+          const label = typeof item.opt === 'string' ? item.opt : item.opt.label;
+          const tag = (typeof item.opt === 'object' && item.opt.tag) ? item.opt.tag : '';
 
-      console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════════════════╣${C.reset}`);
-      console.log(formatBoxLine(`${C.yellow}💡 Tips:${C.reset} ${C.dim}${tipText}${C.reset}`));
-      console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════════════════╝${C.reset}`);
+          if (idx === selectedIndex) {
+            const selLabel = `${T.border}${T.bold}❯ ${label}${T.reset}`;
+            console.log(formatRow(selLabel, tag));
+          } else {
+            const dimLabel = `  ${T.dim}${label}${T.reset}`;
+            console.log(formatRow(dimLabel, tag));
+          }
+        });
+      }
+
+      printFooter(isSearchMode ? 'Type to search, Backspace to delete, Esc to clear search' : tipText);
     }
 
     render();
@@ -159,15 +158,52 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
     function onKeypress(str, key) {
       if (!key) return;
 
+      const filtered = getFilteredOptions();
+
+      if (isSearchMode) {
+        if (key.name === 'escape') {
+          isSearchMode = false;
+          searchQuery = '';
+          render();
+        } else if (key.name === 'backspace') {
+          searchQuery = searchQuery.slice(0, -1);
+          if (searchQuery.length === 0) isSearchMode = false;
+          selectedIndex = 0;
+          render();
+        } else if (key.name === 'return') {
+          if (filtered.length > 0 && selectedIndex < filtered.length) {
+            cleanup();
+            resolve(filtered[selectedIndex].originalIndex);
+          }
+        } else if (key.name === 'up') {
+          if (filtered.length > 0) selectedIndex = (selectedIndex - 1 + filtered.length) % filtered.length;
+          render();
+        } else if (key.name === 'down') {
+          if (filtered.length > 0) selectedIndex = (selectedIndex + 1) % filtered.length;
+          render();
+        } else if (str && str.length === 1 && !key.ctrl && !key.meta) {
+          searchQuery += str;
+          selectedIndex = 0;
+          render();
+        }
+        return;
+      }
+
       if (key.name === 'up') {
-        selected = (selected - 1 + options.length) % options.length;
+        if (filtered.length > 0) selectedIndex = (selectedIndex - 1 + filtered.length) % filtered.length;
         render();
       } else if (key.name === 'down') {
-        selected = (selected + 1) % options.length;
+        if (filtered.length > 0) selectedIndex = (selectedIndex + 1) % filtered.length;
+        render();
+      } else if (str === '/') {
+        isSearchMode = true;
+        searchQuery = '';
         render();
       } else if (key.name === 'return') {
-        cleanup();
-        resolve(selected);
+        if (filtered.length > 0 && selectedIndex < filtered.length) {
+          cleanup();
+          resolve(filtered[selectedIndex].originalIndex);
+        }
       } else if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
         cleanup();
         if (key.ctrl && key.name === 'c') process.exit();
@@ -196,6 +232,7 @@ function promptMultiSelect(options, promptText = 'Select applications to patch (
   return new Promise(resolve => {
     let cursor = 0;
     const checkedState = options.map(() => false);
+    const T = themeEngine.getTheme();
 
     if (!process.stdin.isTTY) {
       resolve(options.map(o => o.value || o));
@@ -210,28 +247,24 @@ function promptMultiSelect(options, promptText = 'Select applications to patch (
       console.clear();
       if (typeof headerFn === 'function') headerFn();
 
-      console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════════════════╗${C.reset}`);
-      console.log(formatBoxLine(`${C.yellow}${C.bold}${promptText}${C.reset}`));
-      console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════════════════╣${C.reset}`);
+      printHeader(promptText);
 
       options.forEach((opt, idx) => {
         const label = typeof opt === 'string' ? opt : opt.label;
         const tag = (typeof opt === 'object' && opt.tag) ? opt.tag : '';
         const isChecked = checkedState[idx];
-        const checkMark = isChecked ? `${C.green}[x]${C.reset}` : `${C.dim}[ ]${C.reset}`;
+        const checkMark = isChecked ? `${T.success}[x]${T.reset}` : `${T.dim}[ ]${T.reset}`;
 
         if (idx === cursor) {
-          const lineText = `${C.cyan}${C.bold}❯ ${checkMark} ${label}${C.reset}`;
-          console.log(formatBoxLine(lineText, tag));
+          const lineText = `${T.border}${T.bold}❯ ${checkMark} ${label}${T.reset}`;
+          console.log(formatRow(lineText, tag));
         } else {
-          const lineText = `  ${checkMark} ${C.dim}${label}${C.reset}`;
-          console.log(formatBoxLine(lineText, tag));
+          const lineText = `  ${checkMark} ${T.dim}${label}${T.reset}`;
+          console.log(formatRow(lineText, tag));
         }
       });
 
-      console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════════════════╣${C.reset}`);
-      console.log(formatBoxLine(`${C.yellow}💡 Tips:${C.reset} ${C.dim}Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm, Esc to back${C.reset}`));
-      console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════════════════╝${C.reset}`);
+      printFooter('Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm, Esc to back');
     }
 
     render();
@@ -270,26 +303,25 @@ function promptMultiSelect(options, promptText = 'Select applications to patch (
 }
 
 /**
- * Animated CLI Spinner helper for async operations
+ * Animated CLI Spinner helper
  */
 function createSpinner(text = 'Processing...') {
   let frameIdx = 0;
   let currentText = text;
   let timer = null;
+  const T = themeEngine.getTheme();
 
   if (process.stdout.isTTY) {
     timer = setInterval(() => {
       const frame = SPINNER_FRAMES[frameIdx % SPINNER_FRAMES.length];
       readline.cursorTo(process.stdout, 0);
-      process.stdout.write(`  ${C.cyan}${frame}${C.reset} ${currentText}`);
+      process.stdout.write(`  ${T.border}${frame}${T.reset} ${currentText}`);
       frameIdx++;
     }, 80);
   }
 
   return {
-    update: (newText) => {
-      currentText = newText;
-    },
+    update: (newText) => { currentText = newText; },
     stop: () => {
       if (timer) clearInterval(timer);
       if (process.stdout.isTTY) {
@@ -303,7 +335,7 @@ function createSpinner(text = 'Processing...') {
         readline.clearLine(process.stdout, 0);
         readline.cursorTo(process.stdout, 0);
       }
-      console.log(`  ${C.green}✓${C.reset} ${msg || currentText}`);
+      console.log(`  ${T.success}✓${T.reset} ${msg || currentText}`);
       beep();
     },
     fail: (msg) => {
@@ -312,7 +344,7 @@ function createSpinner(text = 'Processing...') {
         readline.clearLine(process.stdout, 0);
         readline.cursorTo(process.stdout, 0);
       }
-      console.log(`  ${C.red}✖${C.reset} ${msg || currentText}`);
+      console.log(`  ${T.danger}✖${T.reset} ${msg || currentText}`);
     },
   };
 }
@@ -330,10 +362,11 @@ module.exports = {
   promptSelect,
   promptMultiSelect,
   createSpinner,
-  formatBoxLine,
-  printBox,
+  formatRow,
+  printHeader,
+  printFooter,
   stripAnsi,
   getVisualWidth,
   beep,
-  C,
+  C: themeEngine.getTheme(),
 };
