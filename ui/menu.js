@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes Agent Card TUI Engine (v3.7 Engine)
- * Rounded embedded-title cards (╭─ Title ───╮), erased scrollback buffer, & Arrow key navigation ONLY
+ * BidiForge — Hermes Agent Card TUI Engine (v3.7.1 Engine)
+ * Smooth TUI Rendering (No Black Screen), Hidden Cursor during navigation, & Arrow key cursor ONLY
  * 
- * @version 3.7.0
+ * @version 3.7.1
  * @author Jenzo0
  */
 
@@ -13,13 +13,32 @@ const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 const DEFAULT_CARD_WIDTH = 64;
 
 /**
- * Wipe terminal screen AND scrollback buffer completely to prevent infinite scroll artifacts
+ * Smoothly refresh terminal screen without buffer destruction or black screen artifacts
  */
 function clearScreen() {
   if (process.stdout.isTTY) {
-    process.stdout.write('\x1b[2J\x1b[3J\x1b[H');
+    readline.cursorTo(process.stdout, 0, 0);
+    readline.clearScreenDown(process.stdout);
   } else {
     console.clear();
+  }
+}
+
+/**
+ * Hide blinking cursor during TUI menu interaction
+ */
+function hideCursor() {
+  if (process.stdout.isTTY) {
+    process.stdout.write('\x1b[?25l');
+  }
+}
+
+/**
+ * Restore blinking cursor on exit or cleanup
+ */
+function showCursor() {
+  if (process.stdout.isTTY) {
+    process.stdout.write('\x1b[?25h');
   }
 }
 
@@ -86,7 +105,6 @@ function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH)
 function printHermesCard(rows = [], title = '', subtitle = '', cardWidth = DEFAULT_CARD_WIDTH) {
   const T = themeEngine.getTheme();
   
-  // Calculate top border length
   const visTitle = getVisualWidth(title);
   const topBarLen = Math.max(2, cardWidth - 5 - visTitle);
   const topLine = `${T.border}╭─ ${T.reset}${T.title}${T.bold}${title}${T.reset} ${T.border}${'─'.repeat(topBarLen)}╮${T.reset}`;
@@ -144,6 +162,7 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
       return;
     }
 
+    hideCursor();
     process.stdin.setRawMode(true);
     readline.emitKeypressEvents(process.stdin);
     process.stdin.resume();
@@ -182,7 +201,6 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
         if (selectedIndex >= filtered.length) selectedIndex = 0;
         filtered.forEach((item, idx) => {
           const rawLabel = typeof item.opt === 'string' ? item.opt : item.opt.label;
-          // Strip out legacy numbers [1], [2] to ensure 100% arrow key navigation only
           const cleanLabel = rawLabel.replace(/^⚡\s*\[\d+\]\s*/, '⚡ ').replace(/^⚙️\s*\[\d+\]\s*/, '⚙️ ').replace(/^🚀\s*\[\d+\]\s*/, '🚀 ').replace(/^🔍\s*\[\d+\]\s*/, '🔍 ').replace(/^📂\s*\[\d+\]\s*/, '📂 ').replace(/^🛡️\s*\[\d+\]\s*/, '🛡️ ').replace(/^🩺\s*\[\d+\]\s*/, '🩺 ').replace(/^🔄\s*\[\d+\]\s*/, '🔄 ').replace(/^🖱️\s*\[\d+\]\s*/, '🖱️ ').replace(/^📦\s*\[\d+\]\s*/, '📦 ').replace(/^🧹\s*\[\d+\]\s*/, '🧹 ').replace(/^🧪\s*\[\d+\]\s*/, '🧪 ').replace(/^🎨\s*\[\d+\]\s*/, '🎨 ').replace(/^❌\s*\[\d+\]\s*/, '❌ ').replace(/^\[\d+\]\s*/, '');
           const tag = (typeof item.opt === 'object' && item.opt.tag) ? item.opt.tag : '';
 
@@ -259,6 +277,7 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
     }
 
     function cleanup() {
+      showCursor();
       process.stdin.removeListener('keypress', onKeypress);
       try { process.stdin.setRawMode(false); } catch (_) {}
       process.stdin.pause();
@@ -286,6 +305,7 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
       return;
     }
 
+    hideCursor();
     process.stdin.setRawMode(true);
     readline.emitKeypressEvents(process.stdin);
     process.stdin.resume();
@@ -341,6 +361,7 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
     }
 
     function cleanup() {
+      showCursor();
       process.stdin.removeListener('keypress', onKeypress);
       try { process.stdin.setRawMode(false); } catch (_) {}
       process.stdin.pause();
@@ -414,6 +435,8 @@ module.exports = {
   formatCardRow,
   printPromptBar,
   clearScreen,
+  hideCursor,
+  showCursor,
   stripAnsi,
   getVisualWidth,
   beep,
