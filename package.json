@@ -17,6 +17,6 @@
   "dependencies": {
     "@electron/asar": "^3.2.14"
   },
-  "author": "Jenzo",
+  "author": "Jenzo0 <jenzo.info@gmail.com>",
   "license": "MIT"
 }

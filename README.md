@@ -7,7 +7,7 @@
 
 > **Universal BiDi Compatibility Layer for Electron**
 
-**BidiForge** automatically detects and patches compatible Electron applications using structure-based analysis to fix and optimize **Right-to-Left (RTL)** and **Bi-Directional (BiDi)** text rendering (Arabic, Hebrew, Persian, etc.) on Windows, seamlessly with a single click.
+**BidiForge** automatically detects and patches compatible Electron applications using structure-based analysis to fix and optimize **Right-to-Left (RTL)** and **Bi-Directional (BiDi)** text rendering (Arabic, Hebrew, Persian, etc.) on Windows, seamlessly with an interactive CLI menu or single command.
 
 ---
 
@@ -28,7 +28,8 @@
 ## English Documentation
 
 ### 👤 Author & Credits
-- **Developed:** Jenzo
+- **Developed:** Jenzo0
+- **Email:** jenzo.info@gmail.com
 - **Version:** v3.0.0 (Universal Architecture)
 - **License:** Open Source under the MIT License
 
@@ -44,6 +45,7 @@ Electron-based desktop apps (such as **Discord**, **VS Code**, **Cursor**, **Ope
 **The BidiForge Solution:**
 - ✅ Dynamic first-strong character detection for natural BiDi isolation.
 - ✅ Proper RTL alignment for paragraphs, headings, lists, and tables.
+- ✅ **Auto Process Termination & Auto-Relaunch:** Kills running processes (e.g. `Discord.exe`) automatically before patching to prevent file locks, applies the patch, and relaunches the app automatically.
 - ✅ **Strict LTR Preservation:** Code blocks, Monaco Editor, CodeMirror, diff viewers, and terminals remain 100% LTR isolated without any side effects.
 
 ---
@@ -65,12 +67,12 @@ BidiForge is designed to support compatible Electron applications using structur
 
 ### ⚡ Quick Start
 
-#### 1. One-Click Double-Click (Recommended):
+#### 1. One-Click Interactive Launcher (Recommended):
 Simply double-click the following file:
 ```cmd
 BidiForge.bat
 ```
-The tool automatically scans for installed Electron applications, creates a secure SHA-256 backup, injects the BiDi engine, and repacks the ASAR package atomically in seconds.
+The tool opens an interactive menu allowing you to scan installed applications, pick specific apps, search by name, or patch custom paths with automatic process termination and auto-relaunch.
 
 ---
 
@@ -80,7 +82,7 @@ The tool automatically scans for installed Electron applications, creates a secu
 # Install dependencies (first time only)
 npm install
 
-# 1. Automatically detect and patch all installed Electron apps
+# 1. Interactive CLI Menu / Auto-Patch
 npm start
 
 # 2. Non-destructive scan and status check
@@ -103,7 +105,7 @@ npm test
 ```text
 bidiforge/
 ├── BidiForge.bat           # One-click Windows launcher
-├── index.js                # Main CLI entry point
+├── index.js                # Main CLI entry point & interactive menu
 ├── package.json            # Project definition & dependencies
 ├── LICENSE                 # MIT License
 ├── .gitignore              # Git ignore rules
@@ -131,7 +133,8 @@ bidiforge/
 ├── profiles/               # Application Profiles
 │   ├── generic-electron.js # Universal fallback strategy
 │   ├── opencode.js         # OpenCode Desktop profile
-│   └── antigravity.js      # Antigravity IDE profile
+│   ├── antigravity.js      # Antigravity IDE profile
+│   └── discord.js          # Discord profile
 │
 └── tests/                  # Automated Test Suite
     └── runner.js           # 11/11 tests passing
@@ -142,6 +145,7 @@ bidiforge/
 ### 🛡️ Safety & Rollback
 - **Atomic Repacking:** Repacks to `app.asar.tmp` and validates headers before atomic replacement (`renameSync`), preventing corrupt installations.
 - **SHA-256 Backups:** Creates verified backups before modifying any application.
+- **Auto Process Management:** Automatically terminates running processes before patching and relaunches them after completion.
 - **Automatic Rollback:** Instantly restores original ASAR backup if syntax or structural validation fails.
 
 ---
@@ -155,7 +159,8 @@ Licensed under the **[MIT License](LICENSE)**.
 ## التوثيق باللغة العربية
 
 ### 👤 المبرمج والمعلومات
-- **Developed:** Jenzo
+- **Developed:** Jenzo0
+- **البريد الإلكتروني:** jenzo.info@gmail.com
 - **الوصف:** Universal BiDi Compatibility Layer for Electron
 - **الإصدار الحالي:** v3.0.0 (Universal Architecture)
 - **الترخيص:** مفتوح المصدر تحت رخصة MIT
@@ -167,12 +172,7 @@ Licensed under the **[MIT License](LICENSE)**.
 - ❌ **انعكاس النص المختلط:** ظهور الكلمات الإنجليزية أو الأرقام والروابط في بداية الجمل العربية بشكل غير صحيح.
 - ❌ **مواقع القوائم (Lists & Markers):** ظهور أرقام القوائم (`1.` `2.`) والـ Bullets (`•`) على اليسار رغم أن النص عربي.
 - ❌ **صناديق الكتابة (Composer / Input):** محاذاة مؤقتة خاطئة وتوجيه الكتابة من اليسار لليمين أثناء الكتابة بالعربية.
-- ❌ **الجداول العربية:** عدم محاذاة الجداول العربية إلى اليمين.
-
-**حل BidiForge:**
-- ✅ كشف ديناميكي لاتجاه أول حرف قوي (First Strong Character Detection).
-- ✅ محاذاة القوائم والجداول والفقرات العربية بشكل طبيعي للجهة اليمنى.
-- ✅ حماية كاملة ومطلقة لمناطق الكود البرمجي (Monaco Editor, CodeMirror, Terminals, Code Blocks) لإبقائها LTR دائماً دون أي تأثير سلبي.
+- ❌ **إغلاق وإعادة تشغيل تلقائية:** إغلاق التطبيق المفتوح أوتوماتيكياً لمنع قفل الملفات، تطبيق الباتش، وإعادة تشغيل التطبيق تلقائياً (`Patch Done!`).
 
 ---
 
@@ -196,7 +196,7 @@ Licensed under the **[MIT License](LICENSE)**.
 ```cmd
 BidiForge.bat
 ```
-تقوم الأداة تلقائياً بفحص التطبيقات المثبتة، إنشاء نسخة احتياطية آمنة لكل تطبيق، وتطبيق محرك BiDi خلال ثوانٍ!
+تفتح الأداة واجهة تفاعلية تمكّنك من فحص التطبيقات المثبتة، اختيار تطبيق معين، البحث باسم التطبيق، أو إدخال مسار مباشر مع إغلاق البرنامج وإعادة تشغيله تلقائياً!
 
 ---
 
@@ -206,7 +206,7 @@ BidiForge.bat
 # تثبيت التبعيات (مرة واحدة فقط)
 npm install
 
-# 1. كشف وتطبيق الإصلاح على كل التطبيقات تلقائياً
+# 1. القائمة التفاعلية / التطبيق التلقائي
 npm start
 
 # 2. فحص وتتبع حالة التطبيقات بدون تعديل

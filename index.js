@@ -1,12 +1,16 @@
 /**
- * BidiForge — Main CLI Entry (v3.0 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.0 Engine)
  * Universal BiDi Compatibility Layer for Electron
  * 
  * @version 3.0.0
- * @author Jenzo
+ * @author Jenzo0 <jenzo.info@gmail.com>
  */
 
+const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
+const { execSync, spawn } = require('child_process');
+
 const detector = require('./core/detector');
 const classifier = require('./core/classifier');
 const asar = require('./patcher/asar');
@@ -16,32 +20,120 @@ const status = require('./core/status');
 const logger = require('./core/logger');
 
 const VERSION = '3.0.0';
+const DEVELOPER = 'Jenzo0';
+const EMAIL = 'jenzo.info@gmail.com';
 
 /**
- * Print banner
+ * Print single professional banner
  */
 function banner() {
   console.log('');
-  console.log('╔════════════════════════════════════════════╗');
-  console.log('║            B I D I F O R G E              ║');
-  console.log('║   Universal BiDi Compatibility Layer      ║');
-  console.log('║           Version ' + VERSION + '                    ║');
-  console.log('╚════════════════════════════════════════════╝');
+  console.log('╔══════════════════════════════════════════════════════════════╗');
+  console.log('║                   B I D I F O R G E                          ║');
+  console.log('║        Universal BiDi Compatibility Layer v' + VERSION + '             ║');
+  console.log('║           Developer: ' + DEVELOPER + ' (' + EMAIL + ')          ║');
+  console.log('╚══════════════════════════════════════════════════════════════╝');
   console.log('');
 }
 
 /**
- * Main patch workflow
+ * Kill running application process to release ASAR file locks
+ * @param {object} appInfo - Application metadata
+ * @returns {boolean} True if a process was terminated
  */
-async function patch(targetApp = null) {
-  logger.init();
-  banner();
+function killAppProcess(appInfo) {
+  if (!appInfo || !appInfo.name) return false;
   
-  logger.info('Starting Universal Electron application scan...');
+  let exeNames = [];
+  const baseName = appInfo.name.replace(/[^a-zA-Z0-9_-]/g, '');
+  exeNames.push(`${baseName}.exe`);
+  exeNames.push(`${appInfo.name}.exe`);
+  
+  // Specific process overrides
+  if (/discord/i.test(appInfo.name)) exeNames.push('Discord.exe');
+  if (/opencode/i.test(appInfo.name)) exeNames.push('OpenCode.exe', '@opencode-aidesktop.exe');
+  if (/antigravity/i.test(appInfo.name)) exeNames.push('Antigravity.exe');
+  if (/obsidian/i.test(appInfo.name)) exeNames.push('Obsidian.exe');
+  if (/vscode|code/i.test(appInfo.name)) exeNames.push('Code.exe');
+  if (/cursor/i.test(appInfo.name)) exeNames.push('Cursor.exe');
+  if (/slack/i.test(appInfo.name)) exeNames.push('Slack.exe');
+
+  let killedAny = false;
+  for (const exe of exeNames) {
+    try {
+      const output = execSync(`tasklist /FI "IMAGENAME eq ${exe}"`, { stdio: 'pipe' }).toString();
+      if (output.toLowerCase().includes(exe.toLowerCase())) {
+        logger.info(`Terminating open process ${exe} to release file lock...`);
+        execSync(`taskkill /F /IM "${exe}"`, { stdio: 'pipe' });
+        killedAny = true;
+      }
+    } catch (_) {}
+  }
+  
+  if (killedAny) {
+    // Brief pause to allow OS file system handles to release
+    execSync('ping 127.0.0.1 -n 2 > nul', { stdio: 'pipe' });
+  }
+  
+  return killedAny;
+}
+
+/**
+ * Relaunch application process after patching
+ * @param {object} appInfo - Application metadata
+ */
+function relaunchAppProcess(appInfo) {
+  if (!appInfo || !appInfo.path) return;
+  
+  try {
+    let exePath = null;
+    const parentDir = path.dirname(appInfo.path);
+    
+    // Look for executable in app root or parent directory
+    const candidates = [
+      path.join(appInfo.path, `${appInfo.name}.exe`),
+      path.join(parentDir, `${appInfo.name}.exe`),
+      path.join(appInfo.path, 'Discord.exe'),
+      path.join(parentDir, 'Discord.exe'),
+      path.join(appInfo.path, 'Antigravity.exe'),
+      path.join(appInfo.path, 'Obsidian.exe'),
+    ];
+    
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        exePath = cand;
+        break;
+      }
+    }
+    
+    if (exePath && fs.existsSync(exePath)) {
+      logger.info(`Relaunching ${appInfo.name}...`);
+      const child = spawn(exePath, [], { detached: true, stdio: 'ignore' });
+      child.unref();
+      console.log(`  ✓ Patch Done & ${appInfo.name} Relaunched!`);
+    } else {
+      console.log(`  ✓ Patch Done!`);
+    }
+  } catch (_) {
+    console.log(`  ✓ Patch Done!`);
+  }
+}
+
+/**
+ * Main patch workflow
+ * @param {string|object} target - Target app name, path, or app object
+ * @param {boolean} relaunch - Whether to auto-relaunch process
+ */
+async function patch(target = null, relaunch = true) {
+  logger.init();
   
   let apps = detector.detectAll();
-  if (targetApp) {
-    apps = apps.filter(a => a.name.toLowerCase().includes(targetApp.toLowerCase()) || a.path.toLowerCase().includes(targetApp.toLowerCase()));
+  
+  if (target && typeof target === 'string') {
+    const query = target.toLowerCase();
+    apps = apps.filter(a => a.name.toLowerCase().includes(query) || a.path.toLowerCase().includes(query));
+  } else if (target && typeof target === 'object' && target.path) {
+    apps = [target];
   }
   
   if (apps.length === 0) {
@@ -49,114 +141,82 @@ async function patch(targetApp = null) {
     return { patched: 0, skipped: 0, failed: 0 };
   }
   
-  logger.info(`Found ${apps.length} Electron application(s)`);
-  console.log('');
+  const results = { patched: [], skipped: [], failed: [] };
   
-  const results = {
-    patched: [],
-    skipped: [],
-    failed: [],
-  };
-  
-  for (const app of apps) {
-    console.log(`--------------------------------------------`);
-    console.log(` Target: ${app.displayName} (v${app.version})`);
-    console.log(` Path:   ${app.path}`);
+  for (const appInfo of apps) {
+    console.log('--------------------------------------------');
+    console.log(` Target: ${appInfo.name} (${appInfo.version})`);
+    console.log(` Path:   ${appInfo.path}`);
     
-    // Check if running
-    if (app.isRunning) {
-      logger.warn(`Application is currently running (${app.processName}). Please close it to patch.`);
-      results.skipped.push({ app, reason: 'Application is running' });
-      console.log('');
+    const asarPath = path.join(appInfo.path, 'resources', 'app.asar');
+    if (!fs.existsSync(asarPath)) {
+      logger.error(`ASAR file not found for ${appInfo.name}`);
+      results.failed.push(appInfo);
       continue;
     }
+
+    // Auto-kill running process before patching to prevent EPERM locks
+    killAppProcess(appInfo);
     
-    // Check if re-patch is needed
-    if (!status.needsRepatch(app.path, app.hash)) {
-      logger.info(`Application is already patched with latest hash: ${app.displayName}`);
-      results.skipped.push({ app, reason: 'Already patched' });
-      console.log('');
-      continue;
-    }
-    
-    let extractResult = null;
-    let backupResult = null;
-    
+    let tempDir = null;
     try {
-      // Step 1: Extract to temp workspace
       logger.info('[1/6] Extracting ASAR workspace...');
-      extractResult = await asar.extract(app.asarPath);
-      if (!extractResult.success) {
-        throw new Error('Failed to extract ASAR: ' + extractResult.error);
-      }
+      const ext = await asar.extract(asarPath);
+      if (!ext.success) throw new Error(`Extract failed: ${ext.error}`);
+      tempDir = ext.tempPath;
       
-      // Step 2: Classify runtime structure
       logger.info('[2/6] Analyzing application structure...');
-      const classification = classifier.classify(extractResult.tempPath);
+      const classification = classifier.classify(tempDir);
       if (classification.confidence < 50) {
-        asar.cleanup(extractResult.tempPath);
-        status.setUnsupported(app.path, app, 'Low classification confidence');
-        results.skipped.push({ app, reason: 'Unsupported structure' });
-        console.log('');
-        continue;
+        throw new Error('Low structure confidence - incompatible app layout');
       }
       
-      // Step 3: Create safe SHA-256 backup
       logger.info('[3/6] Creating SHA-256 backup...');
-      backupResult = backup.create(app.asarPath, app);
-      if (!backupResult.success) {
-        throw new Error('Failed to create backup: ' + backupResult.error);
-      }
+      const bak = backup.create(asarPath, appInfo);
+      if (!bak.success) throw new Error(`Backup failed: ${bak.error}`);
       
-      // Step 4: Inject aggregated BiDi rules & profile
       logger.info('[4/6] Injecting BiDi engine...');
-      const injectResult = injector.inject(extractResult.tempPath, app);
-      if (!injectResult.success) {
-        backup.restore(backupResult.backupName, app.asarPath);
-        asar.cleanup(extractResult.tempPath);
-        throw new Error('Injection failed: ' + injectResult.error);
-      }
+      const inj = injector.inject(tempDir, appInfo);
+      if (!inj.success) throw new Error(`Inject failed: ${inj.error}`);
       
-      // Step 5: Repack ASAR atomically
       logger.info('[5/6] Repacking ASAR package atomically...');
-      const packResult = await asar.pack(extractResult.tempPath, app.asarPath);
-      if (!packResult.success) {
-        backup.restore(backupResult.backupName, app.asarPath);
-        throw new Error('Repack failed: ' + packResult.error);
+      const packRes = await asar.pack(tempDir, asarPath);
+      if (!packRes.success) {
+        backup.rollback(appInfo.path);
+        throw new Error(`Repack failed: ${packRes.error}`);
       }
       
-      // Step 6: Verify ASAR integrity
       logger.info('[6/6] Verifying patched ASAR integrity...');
-      const validationResult = asar.validate(app.asarPath);
-      if (!validationResult.valid) {
-        backup.restore(backupResult.backupName, app.asarPath);
-        throw new Error('ASAR validation failed: ' + validationResult.error);
+      const val = asar.validate(asarPath);
+      if (!val.valid) {
+        backup.rollback(appInfo.path);
+        throw new Error(`Validation failed: ${val.error}`);
       }
       
-      // Clean temporary extraction files
-      asar.cleanup(extractResult.tempPath);
-      
-      // Update status registry
-      const newHash = asar.hash(app.asarPath);
-      status.setPatched(app.path, app, {
-        hash: newHash,
-        backup: backupResult.backupName,
+      status.update(appInfo.path, {
+        status: 'PATCHED',
+        bidiForgeVersion: VERSION,
+        appVersion: appInfo.version,
+        entryPoint: inj.entryFile,
+        appRef: inj.appRef,
       });
       
-      logger.success(`Successfully patched ${app.displayName}!`);
-      results.patched.push({ app, injectResult });
+      results.patched.push(appInfo);
       
-    } catch (e) {
-      if (extractResult && extractResult.tempPath) {
-        asar.cleanup(extractResult.tempPath);
+      if (relaunch) {
+        relaunchAppProcess(appInfo);
+      } else {
+        console.log(`  ✓ Successfully patched ${appInfo.name}!`);
       }
-      logger.error(`Failed to patch ${app.displayName}: ${e.message}`);
-      results.failed.push({ app, error: e.message });
+    } catch (e) {
+      logger.error(`Failed to patch ${appInfo.name}: ${e.message}`);
+      results.failed.push(appInfo);
+    } finally {
+      if (tempDir) asar.cleanup(tempDir);
     }
-    console.log('');
   }
   
-  // Summary report
+  console.log('');
   console.log('════════════════════════════════════════════');
   console.log('                 SUMMARY                    ');
   console.log('════════════════════════════════════════════');
@@ -170,102 +230,263 @@ async function patch(targetApp = null) {
 }
 
 /**
- * Scan only and display status table
+ * Scan installed applications and display compatibility table
  */
 function scan() {
   logger.init();
-  banner();
   
-  logger.info('Scanning for Electron applications...');
-  console.log('');
-  
+  console.log('• Starting Universal Electron application scan...');
   const apps = detector.detectAll();
-  if (apps.length === 0) {
-    logger.warn('No Electron applications found');
-    return [];
-  }
-  
-  console.log('Detected Applications:');
-  console.log('────────────────────────────────────────────');
-  
-  for (const app of apps) {
-    const statusInfo = status.get(app.path);
-    const statusStr = statusInfo ? statusInfo.status : 'NEW';
-    const runningStr = app.isRunning ? ' [RUNNING]' : '';
-    
-    console.log(`  ${statusStr.padEnd(12)} ${app.displayName} v${app.version}${runningStr}`);
-    console.log(`              ${app.path}`);
-    console.log('');
-  }
-  
-  console.log('────────────────────────────────────────────');
-  console.log(`Total: ${apps.length} application(s) detected`);
+  console.log(`• Found ${apps.length} Electron application(s)`);
   console.log('');
   
+  if (apps.length === 0) {
+    console.log('No Electron applications discovered.');
+    return apps;
+  }
+  
+  console.log('Discovered Compatible Applications:');
+  console.log('────────────────────────────────────────────────────────────');
+  
+  const appStatus = status.read();
+  apps.forEach((app, idx) => {
+    const reg = appStatus[app.path.toLowerCase()] || {};
+    const st = reg.status || 'NEW';
+    const tag = st === 'PATCHED' ? '[PATCHED]' : '[COMPATIBLE]';
+    console.log(`  [${idx + 1}] ${app.name} (v${app.version}) ${tag}`);
+    console.log(`      Path: ${app.path}`);
+  });
+  
+  console.log('────────────────────────────────────────────────────────────');
+  console.log('');
   return apps;
 }
 
 /**
- * Rollback an app
+ * Patch custom path specified by user
+ * @param {string} customPath - Path to app folder or asar file
  */
-function rollbackApp(appPath) {
-  logger.init();
-  banner();
-  
-  logger.info(`Initiating rollback for: ${appPath}`);
-  const result = backup.rollback(appPath);
-  
-  if (result.success) {
-    status.setUnpatched(appPath, { name: path.basename(appPath), version: 'unknown' });
-    logger.success('Rollback completed successfully');
-  } else {
-    logger.error('Rollback failed: ' + result.error);
+async function patchCustomPath(customPath) {
+  if (!customPath || !fs.existsSync(customPath)) {
+    console.log('[X] ERROR: Specified path does not exist.');
+    return;
   }
-  return result;
+  
+  let appDir = customPath;
+  if (customPath.endsWith('.asar')) {
+    appDir = path.dirname(path.dirname(customPath));
+  }
+  
+  const appInfo = detector.detectElectronApp(appDir);
+  if (!appInfo) {
+    console.log('[X] ERROR: Could not detect valid Electron application structure at specified path.');
+    return;
+  }
+  
+  console.log(`✓ Compatible Electron Structure Detected: ${appInfo.name} (v${appInfo.version})`);
+  await patch(appInfo);
 }
 
 /**
- * Clean temp files and old backups
+ * Rollback app
+ */
+function rollbackApp(targetApp) {
+  logger.init();
+  banner();
+  
+  if (!targetApp) {
+    console.log('Usage: node index.js rollback <app-name-or-path>');
+    return;
+  }
+  
+  const apps = detector.detectAll();
+  const matched = apps.find(a => a.name.toLowerCase().includes(targetApp.toLowerCase()) || a.path.toLowerCase().includes(targetApp.toLowerCase()));
+  
+  const targetPath = matched ? matched.path : targetApp;
+  const res = backup.rollback(targetPath);
+  
+  if (res.success) {
+    status.update(targetPath, { status: 'RESTORED' });
+    console.log(`✓ Successfully restored original backup for ${targetApp}!`);
+  } else {
+    console.log(`[X] Rollback failed: ${res.error}`);
+  }
+}
+
+/**
+ * Cleanup temp files and old backups
  */
 function cleanup() {
   logger.init();
   banner();
   
-  logger.info('Cleaning up temporary workspaces & old backups...');
-  
-  const tempDir = process.env.TEMP || '/tmp';
-  const fs = require('fs');
-  let tempCleaned = 0;
-  
-  try {
-    const entries = fs.readdirSync(tempDir);
-    for (const entry of entries) {
-      if (entry.startsWith('bidiforge-')) {
-        try {
-          fs.rmSync(path.join(tempDir, entry), { recursive: true, force: true });
-          tempCleaned++;
-        } catch (e) {}
-      }
-    }
-  } catch (e) {}
-  
-  const backupResult = backup.cleanup(2);
-  logger.success(`Cleaned ${tempCleaned} temporary workspace(s) and pruned ${backupResult.deleted.length} obsolete backup(s).`);
-  
-  return { temp: tempCleaned, backups: backupResult.deleted.length };
+  console.log('• Cleaning up temporary workspaces & old backups...');
+  const res = backup.cleanup();
+  console.log(`✓ Cleaned obsolete backups (Kept: ${res.kept}).`);
 }
 
-// CLI Command Parser
-const args = process.argv.slice(2);
-const command = args[0] || 'patch';
+/**
+ * Run diagnostic test suite
+ */
+function runTests() {
+  banner();
+  console.log('• Running Automated Test Suite...');
+  try {
+    execSync('node tests/runner.js', { stdio: 'inherit' });
+  } catch (e) {
+    console.log('[X] Diagnostic tests failed.');
+  }
+}
 
+/**
+ * Prompt question helper for readline
+ */
+function askQuestion(rl, query) {
+  return new Promise(resolve => rl.question(query, resolve));
+}
+
+/**
+ * Interactive Menu Workflow
+ */
+async function interactiveMenu() {
+  banner();
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  let running = true;
+  while (running) {
+    console.log('══════════════════════════════════════════════════════════════');
+    console.log('                         MAIN MENU                            ');
+    console.log('══════════════════════════════════════════════════════════════');
+    console.log('  [1] Fast Scan & List Compatible Applications');
+    console.log('  [2] Select Application to Patch (Interactive)');
+    console.log('  [3] Patch ALL Discovered Applications');
+    console.log('  [4] Search Application by Name');
+    console.log('  [5] Patch Custom Application Path (Enter Path)');
+    console.log('  [6] Rollback Application (Restore Original Backup)');
+    console.log('  [7] Clean Temporary Files & Prune Old Backups');
+    console.log('  [8] Run Diagnostic Test Suite');
+    console.log('  [0] Exit');
+    console.log('══════════════════════════════════════════════════════════════');
+    
+    const choice = (await askQuestion(rl, 'Select an option [0-8]: ')).trim();
+    console.log('');
+    
+    switch (choice) {
+      case '1':
+        scan();
+        break;
+        
+      case '2': {
+        const apps = scan();
+        if (apps.length > 0) {
+          const ans = (await askQuestion(rl, 'Enter App Number to patch (or A for All, 0 to cancel): ')).trim();
+          if (ans.toUpperCase() === 'A') {
+            await patch(null);
+          } else {
+            const num = parseInt(ans, 10);
+            if (num > 0 && num <= apps.length) {
+              await patch(apps[num - 1]);
+            }
+          }
+        }
+        break;
+      }
+      
+      case '3':
+        await patch(null);
+        break;
+        
+      case '4': {
+        const nameQuery = (await askQuestion(rl, 'Enter application name to search (e.g. discord, slack, obsidian): ')).trim();
+        if (nameQuery) {
+          console.log(`• Starting Universal Electron application scan for "${nameQuery}"...`);
+          const apps = detector.detectAll().filter(a => a.name.toLowerCase().includes(nameQuery.toLowerCase()));
+          console.log(`• Found ${apps.length} matching application(s)`);
+          console.log('');
+          if (apps.length > 0) {
+            apps.forEach((a, i) => console.log(`  [${i+1}] ${a.name} (${a.version}) - Path: ${a.path}`));
+            const doPatch = (await askQuestion(rl, '\nDo you want to patch these application(s) now? [Y/n]: ')).trim();
+            if (doPatch.toLowerCase() !== 'n') {
+              await patch(nameQuery);
+            }
+          }
+        }
+        break;
+      }
+      
+      case '5': {
+        const customPath = (await askQuestion(rl, 'Enter direct application folder or ASAR file path: ')).trim();
+        if (customPath) {
+          await patchCustomPath(customPath);
+        }
+        break;
+      }
+      
+      case '6': {
+        const appName = (await askQuestion(rl, 'Enter application name or path to rollback: ')).trim();
+        if (appName) {
+          rollbackApp(appName);
+        }
+        break;
+      }
+      
+      case '7':
+        cleanup();
+        break;
+        
+      case '8':
+        runTests();
+        break;
+        
+      case '0':
+        running = false;
+        console.log('Thank you for using BidiForge!');
+        break;
+        
+      default:
+        console.log('Invalid selection. Please enter a number between 0 and 8.');
+    }
+    
+    if (running && choice !== '0') {
+      await askQuestion(rl, '\nPress Enter to return to main menu...');
+      console.clear();
+      banner();
+    }
+  }
+  
+  rl.close();
+}
+
+/**
+ * Main execution handler
+ */
 (async () => {
+  const args = process.argv.slice(2);
+  
+  if (args.length === 0) {
+    // If run without arguments, enter interactive menu
+    await interactiveMenu();
+    return;
+  }
+  
+  const command = args[0].toLowerCase();
+  
   try {
     switch (command) {
       case 'scan':
       case '--scan':
       case '-s':
+        banner();
         scan();
+        break;
+        
+      case 'patch':
+      case '--patch':
+        banner();
+        await patch(args[1] || null);
         break;
         
       case 'rollback':
@@ -286,12 +507,14 @@ const command = args[0] || 'patch';
         
       case 'status':
       case '--status':
+        banner();
         scan();
         break;
         
       case 'repair':
       case '--repair':
-        await patch(args[1]);
+        banner();
+        await patch(args[1] || null);
         break;
         
       case 'help':
@@ -312,6 +535,7 @@ const command = args[0] || 'patch';
         break;
         
       default:
+        banner();
         await patch(command !== 'patch' ? command : args[1]);
     }
   } catch (e) {

@@ -6,14 +6,6 @@ title BidiForge - Universal BiDi Compatibility Layer for Electron v3.0
 REM Set Working Directory
 cd /d "%~dp0"
 
-echo.
-echo ===================================================
-echo             B I D I F O R G E
-echo    Universal BiDi Compatibility Layer
-echo              Version 3.0.0
-echo ===================================================
-echo.
-
 REM Check Node.js
 where node >nul 2>&1
 if %errorLevel% neq 0 goto :no_node
@@ -37,7 +29,7 @@ node index.js %ARG1% %ARG2%
 goto :done
 
 :run_default
-node index.js patch
+node index.js
 goto :done
 
 :run_scan
@@ -65,8 +57,11 @@ node index.js help
 goto :done
 
 :no_node
+echo.
+echo ===================================================
 echo [X] ERROR: Node.js is not installed or not in PATH.
 echo     Please install Node.js v16 or higher.
+echo ===================================================
 echo.
 echo Press any key to exit...
 pause

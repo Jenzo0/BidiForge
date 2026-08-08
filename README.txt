@@ -6,7 +6,8 @@
 [ENGLISH SECTION]
 
 Author & Credits:
-  - Developed: Jenzo
+  - Developed: Jenzo0
+  - Email: jenzo.info@gmail.com
   - Description: Universal BiDi Compatibility Layer for Electron
   - Version: v3.0.0 Universal Architecture
   - License: Open Source (MIT License)
@@ -34,7 +35,8 @@ CLI Commands:
 [القسم العربي]
 
 المبرمج والمعلومات:
-  - Developed: Jenzo
+  - Developed: Jenzo0
+  - البريد الإلكتروني: jenzo.info@gmail.com
   - الوصف: Universal BiDi Compatibility Layer for Electron
   - الإصدار: v3.0.0 Universal
   - الترخيص: مفتوح المصدر (MIT License)
