@@ -1,0 +1,22 @@
+{
+  "name": "bidiforge",
+  "version": "3.0.0",
+  "description": "Universal BiDi Compatibility Layer for Electron",
+  "main": "index.js",
+  "bin": {
+    "bidiforge": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "scan": "node index.js scan",
+    "patch": "node index.js patch",
+    "rollback": "node index.js rollback",
+    "cleanup": "node index.js cleanup",
+    "test": "node tests/runner.js"
+  },
+  "dependencies": {
+    "@electron/asar": "^3.2.14"
+  },
+  "author": "Jenzo",
+  "license": "MIT"
+}
