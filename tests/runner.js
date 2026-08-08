@@ -44,8 +44,8 @@ test('detectAll returns an array of Electron apps', () => {
 });
 
 test('formatAppName formats raw app names correctly', () => {
-  assert.strictEqual(detector.formatAppName('@opencode-aidesktop'), 'Opencode Aidesktop');
-  assert.strictEqual(detector.formatAppName('antigravity'), 'Antigravity');
+  assert.strictEqual(detector.formatAppName('@opencode-aidesktop'), 'OpenCode AI Desktop');
+  assert.strictEqual(detector.formatAppName('antigravity'), 'Antigravity IDE');
 });
 
 // Test Group 2: Dynamic Entry & CJS/ESM Classifier

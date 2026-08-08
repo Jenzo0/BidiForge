@@ -52,10 +52,10 @@ function readAsarPackageJson(appAsar) {
 function detectRuntimeType(appAsar) {
   try {
     if (!asar) asar = require('@electron/asar');
-    const header = asar.readHeader(appAsar);
-    if (!header || !header.header || !header.header.files) return 'unknown';
+    const raw = asar.getRawHeader(appAsar);
+    if (!raw || !raw.header || !raw.header.files) return 'unknown';
 
-    const files = header.header.files;
+    const files = raw.header.files;
     if (files['out'] && files['out'].files && files['out'].files['main']) {
       try {
         const sample = asar.extractFile(appAsar, 'out/main/index.js').toString('utf8', 0, 500);
@@ -113,10 +113,12 @@ function detectElectronApp(dirPath) {
 
     const runtimeType = detectRuntimeType(appAsar);
     const hash = getFileHash(appAsar);
+    const cleanName = formatAppName(rawName, dirPath);
 
     return {
-      name: rawName,
-      displayName: formatAppName(rawName),
+      name: cleanName,
+      rawName: rawName,
+      displayName: cleanName,
       version: version,
       path: dirPath,
       asarPath: appAsar,
@@ -150,7 +152,6 @@ function scanRoot(root, depth = 0, maxDepth = 2) {
       
       const fullPath = path.join(root, entry.name);
       
-      // Check if current directory is an Electron app
       const detection = detectElectronApp(fullPath);
       if (detection) {
         results.push(detection);
@@ -179,8 +180,8 @@ function detectAll() {
   for (const root of SEARCH_ROOTS) {
     const apps = scanRoot(root);
     for (const app of apps) {
-      if (!seen.has(app.path)) {
-        seen.add(app.path);
+      if (!seen.has(app.path.toLowerCase())) {
+        seen.add(app.path.toLowerCase());
         results.push(app);
       }
     }
@@ -193,8 +194,8 @@ function detectAll() {
     if (existing) {
       existing.isRunning = true;
       existing.processName = running.processName;
-    } else if (!seen.has(running.path)) {
-      seen.add(running.path);
+    } else if (!seen.has(running.path.toLowerCase())) {
+      seen.add(running.path.toLowerCase());
       results.push(running);
     }
   }
@@ -252,11 +253,24 @@ function getFileHash(filePath) {
 }
 
 /**
- * Format raw app name for display
+ * Format raw app name and path into clean display name
  * @param {string} name - Raw app name
+ * @param {string} dirPath - Optional directory path
  * @returns {string} Clean formatted name
  */
-function formatAppName(name) {
+function formatAppName(name, dirPath = '') {
+  const combined = (name + ' ' + dirPath).toLowerCase();
+  
+  if (combined.includes('discord')) return 'Discord';
+  if (combined.includes('opencode')) return 'OpenCode AI Desktop';
+  if (combined.includes('antigravity')) return 'Antigravity IDE';
+  if (combined.includes('docker')) return 'Docker Desktop';
+  if (combined.includes('obsidian')) return 'Obsidian';
+  if (combined.includes('heroic')) return 'Heroic Games Launcher';
+  if (combined.includes('code') || combined.includes('vscode')) return 'VS Code';
+  if (combined.includes('cursor')) return 'Cursor';
+  if (combined.includes('slack')) return 'Slack';
+
   return name
     .replace(/^@/, '')
     .replace(/[\/-]/g, ' ')
