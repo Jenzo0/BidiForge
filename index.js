@@ -1,7 +1,7 @@
 /**
  * BidiForge — Main CLI Entry & Interactive Engine (v3.2 Engine)
  * Universal BiDi Compatibility Layer for Electron
- * Supports Arrow Key Keyboard Navigation (↑/↓), Animated Spinners, & Windows Context Menu
+ * Cyberpunk Box Containers, Arrow Key Navigation (↑/↓), Animated Spinners, & Status Badges
  * 
  * @version 3.2.0
  * @author Jenzo0
@@ -23,7 +23,7 @@ const inspector = require('./core/inspector');
 const watcher = require('./core/watcher');
 const shell = require('./integrations/shell');
 const vault = require('./patcher/vault');
-const { promptSelect, createSpinner, beep, C } = require('./ui/menu');
+const { promptSelect, createSpinner, printBox, formatBoxLine, beep, C } = require('./ui/menu');
 
 const VERSION = '3.2.0';
 const DEVELOPER = 'Jenzo0';
@@ -265,19 +265,19 @@ async function patch(target = null, relaunch = true, force = false) {
     }
   }
   
-  console.log('════════════════════════════════════════════');
-  console.log(`             ${C.bold}SUMMARY REPORT${C.reset}                `);
-  console.log('════════════════════════════════════════════');
-  console.log(`  ${C.green}✓ Patched:  ${results.patched.length}${C.reset}`);
-  console.log(`  ${C.yellow}• Skipped:  ${results.skipped.length}${C.reset}`);
-  console.log(`  ${C.red}✖ Failed:   ${results.failed.length}${C.reset}`);
-  console.log('════════════════════════════════════════════\n');
+  const summaryLines = [
+    `${C.green}✓ Patched Applications: ${results.patched.length}${C.reset}`,
+    `${C.yellow}• Skipped (Patched):    ${results.skipped.length}${C.reset}`,
+    `${C.red}✖ Failed Applications:  ${results.failed.length}${C.reset}`,
+  ];
+  printBox(summaryLines, 'SUMMARY REPORT');
+  console.log('');
   
   return results;
 }
 
 /**
- * Scan installed applications and display clean formatted table
+ * Scan installed applications and display Cyberpunk Boxed table with status badges
  */
 function scan() {
   logger.init();
@@ -291,29 +291,56 @@ function scan() {
     return apps;
   }
   
-  console.log(`${C.bold}Discovered Compatible Applications:${C.reset}`);
-  console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}`);
-  
+  const boxLines = [];
   apps.forEach((app, idx) => {
     const asarPath = path.join(app.path, 'resources', 'app.asar');
     const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
     const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
     
-    let statusDisplay = '';
-    
+    let statusTag = '';
     if (updateCheck.state === 'PATCHED_VERIFIED') {
-      statusDisplay = `${C.green}✓ Compatible${C.reset}  ${C.cyan}★ (Patched)${C.reset}`;
+      statusTag = `${C.green}✓ Compatible${C.reset}  ${C.cyan}★ (Patched)${C.reset}`;
     } else if (updateCheck.state === 'APP_UPDATED') {
-      statusDisplay = `${C.magenta}[VENDOR UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
+      statusTag = `${C.magenta}[VENDOR UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
     } else {
-      statusDisplay = `${C.green}✓ Compatible${C.reset}`;
+      statusTag = `${C.green}✓ Compatible${C.reset}`;
     }
     
-    console.log(`  ${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})   ${statusDisplay}`);
+    boxLines.push({
+      text: `${C.cyan}[${idx + 1}]${C.reset} ${C.white}${C.bold}${app.name}${C.reset} (v${app.version})`,
+      tag: statusTag,
+    });
   });
   
-  console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}\n`);
+  printBox(boxLines, 'DISCOVERED ELECTRON APPLICATIONS & STATUS');
+  console.log('');
   return apps;
+}
+
+/**
+ * Build option list with status tags for promptSelect
+ */
+function getAppSelectOptions(apps) {
+  return apps.map((app, idx) => {
+    const asarPath = path.join(app.path, 'resources', 'app.asar');
+    const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
+    const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
+    
+    let tag = '';
+    if (updateCheck.state === 'PATCHED_VERIFIED') {
+      tag = `${C.green}✓ Compatible${C.reset}  ${C.cyan}★ (Patched)${C.reset}`;
+    } else if (updateCheck.state === 'APP_UPDATED') {
+      tag = `${C.magenta}[VENDOR UPDATE DETECTED]${C.reset}  ${C.yellow}⚡ Auto-Repair Ready${C.reset}`;
+    } else {
+      tag = `${C.green}✓ Compatible${C.reset}`;
+    }
+    
+    return {
+      label: `${app.name} (v${app.version})`,
+      tag: tag,
+      value: app,
+    };
+  });
 }
 
 /**
@@ -339,16 +366,19 @@ function runHealthInspection(target = null) {
     const report = inspector.inspectApp(app);
     const scoreColor = report.score >= 80 ? C.green : (report.score >= 50 ? C.yellow : C.red);
 
-    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
-    console.log(` ${C.bold}App:${C.reset} ${C.white}${report.appName}${C.reset} (v${report.appVersion})`);
-    console.log(` ${C.bold}Health Score:${C.reset} ${scoreColor}${report.score}/100 (${report.grade})${C.reset}  —  ${C.bold}Status:${C.reset} ${scoreColor}${report.status}${C.reset}`);
-    console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}`);
+    const boxLines = [
+      `Health Score: ${scoreColor}${report.score}/100 (${report.grade})${C.reset}  —  Status: ${scoreColor}${report.status}${C.reset}`,
+      `Inspected At: ${new Date(report.inspectedAt).toLocaleString()}`,
+      `────────────────────────────────────────────────────────────`,
+    ];
 
     report.checks.forEach(check => {
       const symbol = check.passed ? `${C.green}✓${C.reset}` : `${C.red}✖${C.reset}`;
-      console.log(`  ${symbol} ${C.bold}${check.name}:${C.reset} ${check.detail}`);
+      boxLines.push(`${symbol} ${C.bold}${check.name}:${C.reset} ${check.detail}`);
     });
-    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}\n`);
+
+    printBox(boxLines, `HEALTH REPORT: ${report.appName} (v${report.appVersion})`);
+    console.log('');
   }
 }
 
@@ -539,9 +569,9 @@ async function interactiveMenu() {
         banner();
         const apps = scan();
         if (apps.length > 0) {
-          const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
-          appChoices.push('🚀 Patch ALL Discovered Applications');
-          appChoices.push('* Back to Main Menu');
+          const appChoices = getAppSelectOptions(apps);
+          appChoices.push({ label: '🚀 Patch ALL Discovered Applications', tag: '' });
+          appChoices.push({ label: '* Back to Main Menu', tag: '' });
 
           const appIdx = await promptSelect(appChoices, 'Select Application to Patch:', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
@@ -559,8 +589,8 @@ async function interactiveMenu() {
         banner();
         const apps = scan();
         if (apps.length > 0) {
-          const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
-          appChoices.push('* Back to Main Menu');
+          const appChoices = getAppSelectOptions(apps);
+          appChoices.push({ label: '* Back to Main Menu', tag: '' });
           const appIdx = await promptSelect(appChoices, 'Select Application to Patch:', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -619,7 +649,7 @@ async function interactiveMenu() {
         banner();
         const apps = scan();
         if (apps.length > 0) {
-          const appChoices = apps.map((a, i) => `${a.name} (v${a.version})`);
+          const appChoices = getAppSelectOptions(apps);
           const appIdx = await promptSelect(appChoices, 'Select Application for Live Hot-Reload Watcher:', banner);
           if (appIdx >= 0 && appIdx < apps.length) {
             watcher.watch(apps[appIdx]);
@@ -645,10 +675,11 @@ async function interactiveMenu() {
         banner();
         const snapshots = vault.listSnapshots();
         console.log(`\n${C.cyan}• Vault Snapshot Registry (${snapshots.length} snapshots)${C.reset}\n`);
-        snapshots.forEach((s, idx) => {
-          console.log(`  ${C.cyan}[${idx+1}]${C.reset} ${C.white}${C.bold}${s.appName}${C.reset} (v${s.appVersion})  —  ID: ${C.yellow}${s.id}${C.reset}`);
-          console.log(`      ${C.dim}Date: ${new Date(s.createdAt).toLocaleString()} | SHA-256: ${s.hash.slice(0, 16)}...${C.reset}`);
-        });
+        const snapshotLines = snapshots.map((s, idx) => ({
+          text: `${C.cyan}[${idx+1}]${C.reset} ${C.white}${C.bold}${s.appName}${C.reset} (v${s.appVersion})`,
+          tag: `${C.yellow}${s.id}${C.reset}`,
+        }));
+        printBox(snapshotLines, 'VAULT SNAPSHOTS');
         break;
       }
 

@@ -1,6 +1,6 @@
 /**
  * BidiForge — Interactive CLI UI Engine (v3.2 Engine)
- * Arrow key navigation (↑/↓), animated spinners, vibrant emoji badges, and search-as-you-type
+ * Cyberpunk Box Containers, Arrow key navigation (↑/↓), status tags, and animated spinners
  * 
  * @version 3.2.0
  * @author Jenzo0
@@ -24,10 +24,61 @@ const C = {
 };
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const BOX_WIDTH = 68;
 
 /**
- * Interactive Arrow-Key Menu Selector (↑ Up / ↓ Down / Enter / Esc)
- * @param {Array} options - List of string options or objects { label, value, detail }
+ * Strip ANSI escape codes from string to get true visual length
+ * @param {string} str - String with ANSI codes
+ * @returns {string} Clean string
+ */
+function stripAnsi(str) {
+  return (str || '').replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+/**
+ * Format a single line of text enclosed in a 68-char Cyberpunk Box
+ * @param {string} content - Line text
+ * @param {string} tag - Optional right-aligned tag or badge
+ * @returns {string} Formatted box line
+ */
+function formatBoxLine(content = '', tag = '') {
+  const visContent = stripAnsi(content);
+  const visTag = stripAnsi(tag);
+  
+  if (tag) {
+    const totalVis = visContent.length + visTag.length;
+    const padLen = Math.max(1, BOX_WIDTH - 4 - totalVis);
+    return `${C.cyan}║${C.reset} ${content}${' '.repeat(padLen)}${tag} ${C.cyan}║${C.reset}`;
+  } else {
+    const padLen = Math.max(0, BOX_WIDTH - 4 - visContent.length);
+    return `${C.cyan}║${C.reset} ${content}${' '.repeat(padLen)} ${C.cyan}║${C.reset}`;
+  }
+}
+
+/**
+ * Print a full Cyberpunk Box container
+ * @param {Array} lines - Array of line strings or objects { text, tag }
+ * @param {string} title - Optional title header
+ */
+function printBox(lines = [], title = '') {
+  console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════╗${C.reset}`);
+  if (title) {
+    console.log(formatBoxLine(`${C.yellow}${C.bold}${title}${C.reset}`));
+    console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════╣${C.reset}`);
+  }
+  lines.forEach(line => {
+    if (typeof line === 'object') {
+      console.log(formatBoxLine(line.text || line.label || '', line.tag || ''));
+    } else {
+      console.log(formatBoxLine(line));
+    }
+  });
+  console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════╝${C.reset}`);
+}
+
+/**
+ * Interactive Arrow-Key Menu Selector inside Cyberpunk Box Containers (↑ Up / ↓ Down / Enter / Esc)
+ * @param {Array} options - List of string options or objects { label, tag, detail, value }
  * @param {string} promptText - Prompt header title
  * @param {function} headerFn - Optional banner/header function to call on render
  * @returns {Promise<number>} Selected index
@@ -51,23 +102,26 @@ function promptSelect(options, promptText = 'Select an option using ↑/↓ arro
       if (typeof headerFn === 'function') {
         headerFn();
       }
-      console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
-      console.log(` ${C.bold}${promptText}${C.reset}`);
-      console.log(`${C.dim}  Use ↑/↓ Arrow Keys to navigate, Enter to select, Esc to cancel${C.reset}`);
-      console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}\n`);
+
+      console.log(`${C.cyan}╔══════════════════════════════════════════════════════════════════╗${C.reset}`);
+      console.log(formatBoxLine(`${C.yellow}${C.bold}${promptText}${C.reset}`));
+      console.log(formatBoxLine(`${C.dim}  Use ↑/↓ Arrow Keys to navigate, Enter to select, Esc to cancel${C.reset}`));
+      console.log(`${C.cyan}╠══════════════════════════════════════════════════════════════════╣${C.reset}`);
 
       options.forEach((opt, idx) => {
         const label = typeof opt === 'string' ? opt : opt.label;
-        const detail = (typeof opt === 'object' && opt.detail) ? `   ${C.dim}${opt.detail}${C.reset}` : '';
+        const tag = (typeof opt === 'object' && opt.tag) ? opt.tag : '';
 
         if (idx === selected) {
-          console.log(`  ${C.cyan}${C.bold}❯ ${label}${C.reset}${detail}`);
+          const selText = `${C.cyan}${C.bold}❯ ${label}${C.reset}`;
+          console.log(formatBoxLine(selText, tag));
         } else {
-          console.log(`    ${C.dim}${label}${C.reset}${detail}`);
+          const dimText = `  ${C.dim}${label}${C.reset}`;
+          console.log(formatBoxLine(dimText, tag));
         }
       });
 
-      console.log(`\n${C.cyan}────────────────────────────────────────────────────────────${C.reset}`);
+      console.log(`${C.cyan}╚══════════════════════════════════════════════════════════════════╝${C.reset}`);
     }
 
     render();
@@ -163,6 +217,9 @@ function beep() {
 module.exports = {
   promptSelect,
   createSpinner,
+  formatBoxLine,
+  printBox,
+  stripAnsi,
   beep,
   C,
 };
