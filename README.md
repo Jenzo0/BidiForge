@@ -23,28 +23,24 @@
 
 ### 1. 🪬 Interactive Main Menu (Hermes TUI)
 ![BidiForge Interactive Main Menu](docs/images/tui-main-menu.png)
-*الصفحة الرئيسية التفاعلية مع البانر العلوي وجميع الخيارات المتوفرة والتنقل السلس بالأسهم.*
 *Interactive Main Menu featuring responsive header, detected apps status, and keyboard-driven Hermes TUI card.*
 
 ---
 
 ### 2. ⚡ Confirmation & Multi-Stage Repack Engine
 ![Confirm Patch & Safe Repack](docs/images/tui-confirm-patch.png)
-*شاشة التأكيد وتأمين عملية استخراج وإعادة تجميع الـ ASAR بآلية الأمان الحسابية الذكية بدون توقف.*
 *Confirmation screen demonstrating safe ASAR extraction, ES module syntax validation, and file-lock resilience.*
 
 ---
 
 ### 3. 🎨 Live Hot-Reload Watcher & Theme Engine
 ![Live Hot-Reload Watcher](docs/images/tui-live-watcher.png)
-*محرك المراقبة الحية في وضع Cyberpunk Red الذي يراقب القواعد ويقوم بالتحديث الفوري عند التعديل.*
 *Live Hot-Reload Watcher engine running in Cyberpunk Red color theme, monitoring rules for real-time auto-patching.*
 
 ---
 
 ### 4. 🖱️ Windows Explorer Context Menu Integration
 ![Windows Explorer Context Menu Integration](docs/images/windows-context-menu.png)
-*التكامل المباشر مع قائمة الزر الأيمن في الويندوز لإضافة خيار الباتش بنقرة واحدة لأي مجلد.*
 *One-click Windows Explorer right-click context menu integration for instant application patching.*
 
 </div>
