@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes Agent Card TUI Engine (v3.8.0 Engine)
- * Perfect Vertical Line Border Alignment, Full Hero Logo Support, & Arrow Cursor Selection Everywhere
+ * BidiForge — Hermes Agent Card TUI Engine (v3.9.0 Engine)
+ * Dynamic Card Width (100% Solid Straight Vertical Borders), Asterisk-Free Back Options, Distinct Tip Footer, & Animated Fast Scan
  * 
- * @version 3.8.0
+ * @version 3.9.0
  * @author Jenzo0
  */
 
@@ -10,7 +10,7 @@ const readline = require('readline');
 const themeEngine = require('./theme');
 
 const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-const DEFAULT_CARD_WIDTH = 68;
+const DEFAULT_MIN_CARD_WIDTH = 78;
 
 /**
  * Smoothly refresh terminal screen in-place without buffer destruction or black screen
@@ -50,7 +50,7 @@ function stripAnsi(str) {
 }
 
 /**
- * Accurate terminal character width helper (Fixes crooked right border line alignment)
+ * Accurate terminal character width helper (Guarantees 100% straight vertical border lines)
  */
 function getVisualWidth(str) {
   const clean = stripAnsi(str);
@@ -72,7 +72,7 @@ function getVisualWidth(str) {
 /**
  * Format a single line enclosed inside a Hermes rounded card container with 100% straight vertical border
  */
-function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH) {
+function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_MIN_CARD_WIDTH) {
   const T = themeEngine.getTheme();
   const visLeft = getVisualWidth(leftText);
   const visRight = getVisualWidth(rightTag);
@@ -88,10 +88,26 @@ function formatCardRow(leftText = '', rightTag = '', width = DEFAULT_CARD_WIDTH)
 }
 
 /**
- * Print Hermes Agent Rounded Card Container with embedded title (╭─ Title ───╮)
+ * Print Hermes Agent Rounded Card Container with dynamic width calculation for 100% solid straight vertical borders
  */
-function printHermesCard(rows = [], title = '', subtitle = '', cardWidth = DEFAULT_CARD_WIDTH) {
+function printHermesCard(rows = [], title = '', subtitle = '', targetWidth = null) {
   const T = themeEngine.getTheme();
+
+  // Dynamically calculate required card width based on content to guarantee 100% straight vertical borders
+  let maxContentWidth = 0;
+  rows.forEach(r => {
+    const labelStr = typeof r === 'object' ? (r.text || r.label || '') : r;
+    const tagStr = typeof r === 'object' ? (r.tag || '') : '';
+    const visL = getVisualWidth(labelStr);
+    const visT = getVisualWidth(tagStr);
+    maxContentWidth = Math.max(maxContentWidth, visL + visT);
+  });
+
+  if (subtitle) {
+    maxContentWidth = Math.max(maxContentWidth, getVisualWidth(subtitle));
+  }
+
+  const cardWidth = targetWidth || Math.max(DEFAULT_MIN_CARD_WIDTH, maxContentWidth + 6);
   
   const visTitle = getVisualWidth(title);
   const topBarLen = Math.max(2, cardWidth - 5 - visTitle);
@@ -117,32 +133,20 @@ function printHermesCard(rows = [], title = '', subtitle = '', cardWidth = DEFAU
 }
 
 /**
- * Print sleek compact prompt input bar (❯ |)
+ * Print sleek vibrant footer prompt bar with distinct Tip styling
  */
 function printPromptBar(tipText = '') {
   const T = themeEngine.getTheme();
+  console.log('');
   if (tipText) {
-    console.log(`${T.dim}✦ Tip: ${tipText}${T.reset}`);
+    console.log(`${T.warning}${T.bold}✦ Tip:${T.reset} ${T.border}${tipText}${T.reset}`);
   }
   console.log(`${T.border}────────────────────────────────────────────────────────────────────────────${T.reset}`);
   console.log(`${T.title}${T.bold}❯${T.reset} ${T.dim}|${T.reset}`);
 }
 
 /**
- * Compact Header Banner for Interactive Menus in smaller terminals
- */
-function printCompactMenuHeader() {
-  const T = themeEngine.getTheme();
-  console.log(`${T.title}${T.bold}  ⚡ BidiForge Engine v3.8.0${T.reset} ${T.border}· Universal BiDi Compatibility Layer · Developer: Jenzo0${T.reset}\n`);
-}
-
-/**
- * Interactive Hermes Card Selector with Auto-Windowing Pagination & Full Banner support
- * @param {Array} options - List of string options or objects { label, tag, value }
- * @param {string} promptText - Card title
- * @param {function} headerFn - Header callback
- * @param {string} subtitleText - Card subtitle state
- * @returns {Promise<number>} Selected index
+ * Interactive Hermes Card Selector with Auto-Windowing Pagination & Full Logo Banner
  */
 function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn = null, subtitleText = '') {
   return new Promise(resolve => {
@@ -175,17 +179,9 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
     function render() {
       clearScreen();
       
-      const termRows = process.stdout.rows || 24;
-      
-      // Render full banner header if provided and terminal has enough height (>= 32 lines)
+      // Execute banner/header callback
       if (typeof headerFn === 'function') {
-        if (termRows >= 32) {
-          headerFn();
-        } else {
-          printCompactMenuHeader();
-        }
-      } else {
-        printCompactMenuHeader();
+        headerFn();
       }
 
       const filtered = getFilteredOptions();
@@ -204,8 +200,8 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
       } else {
         if (selectedIndex >= filtered.length) selectedIndex = 0;
 
-        // Auto-calculate max visible rows dynamically to prevent viewport overflow
-        const maxVisible = Math.max(4, Math.min(10, termRows - (termRows >= 32 ? 26 : 10)));
+        const termRows = process.stdout.rows || 24;
+        const maxVisible = Math.max(5, Math.min(12, termRows - 14));
 
         let startIdx = 0;
         let endIdx = filtered.length;
@@ -226,7 +222,26 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
         for (let idx = startIdx; idx < endIdx; idx++) {
           const item = filtered[idx];
           const rawLabel = typeof item.opt === 'string' ? item.opt : item.opt.label;
-          const cleanLabel = rawLabel.replace(/^⚡\s*\[\d+\]\s*/, '⚡ ').replace(/^⚙️\s*\[\d+\]\s*/, '⚙️ ').replace(/^🚀\s*\[\d+\]\s*/, '🚀 ').replace(/^🔍\s*\[\d+\]\s*/, '🔍 ').replace(/^📂\s*\[\d+\]\s*/, '📂 ').replace(/^🛡️\s*\[\d+\]\s*/, '🛡️ ').replace(/^🩺\s*\[\d+\]\s*/, '🩺 ').replace(/^🔄\s*\[\d+\]\s*/, '🔄 ').replace(/^🖱️\s*\[\d+\]\s*/, '🖱️ ').replace(/^📦\s*\[\d+\]\s*/, '📦 ').replace(/^🧹\s*\[\d+\]\s*/, '🧹 ').replace(/^🧪\s*\[\d+\]\s*/, '🧪 ').replace(/^🎨\s*\[\d+\]\s*/, '🎨 ').replace(/^❌\s*\[\d+\]\s*/, '❌ ').replace(/^\[\d+\]\s*/, '');
+          
+          // Remove asterisks (*) completely from back/cancel options across the entire tool
+          const cleanLabel = rawLabel
+            .replace(/^\*\s*/, '')
+            .replace(/^⚡\s*\[\d+\]\s*/, '⚡ ')
+            .replace(/^⚙️\s*\[\d+\]\s*/, '⚙️ ')
+            .replace(/^🚀\s*\[\d+\]\s*/, '🚀 ')
+            .replace(/^🔍\s*\[\d+\]\s*/, '🔍 ')
+            .replace(/^📂\s*\[\d+\]\s*/, '📂 ')
+            .replace(/^🛡️\s*\[\d+\]\s*/, '🛡️ ')
+            .replace(/^🩺\s*\[\d+\]\s*/, '🩺 ')
+            .replace(/^🔄\s*\[\d+\]\s*/, '🔄 ')
+            .replace(/^🖱️\s*\[\d+\]\s*/, '🖱️ ')
+            .replace(/^📦\s*\[\d+\]\s*/, '📦 ')
+            .replace(/^🧹\s*\[\d+\]\s*/, '🧹 ')
+            .replace(/^🧪\s*\[\d+\]\s*/, '🧪 ')
+            .replace(/^🎨\s*\[\d+\]\s*/, '🎨 ')
+            .replace(/^❌\s*\[\d+\]\s*/, '❌ ')
+            .replace(/^\[\d+\]\s*/, '');
+            
           const tag = (typeof item.opt === 'object' && item.opt.tag) ? item.opt.tag : '';
 
           if (idx === selectedIndex) {
@@ -243,7 +258,7 @@ function promptSelect(options, promptText = 'BidiForge Selection Menu', headerFn
         }
       }
 
-      printHermesCard(rows, promptText, subtitleText || `Select option with ↑/↓ arrows and press Enter`, DEFAULT_CARD_WIDTH);
+      printHermesCard(rows, promptText, subtitleText || `Select option with ↑/↓ arrows and press Enter`);
       printPromptBar(isSearchMode ? 'Type query to filter, Backspace to delete, Esc to cancel' : 'Use ↑/↓ to navigate, / to filter, Enter to select, Esc to back');
     }
 
@@ -337,18 +352,14 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
 
     function render() {
       clearScreen();
-      
-      const termRows = process.stdout.rows || 24;
-      if (typeof headerFn === 'function' && termRows >= 32) {
+      if (typeof headerFn === 'function') {
         headerFn();
-      } else {
-        printCompactMenuHeader();
       }
 
       const rows = [];
       options.forEach((opt, idx) => {
         const rawLabel = typeof opt === 'string' ? opt : opt.label;
-        const cleanLabel = rawLabel.replace(/^\[\d+\]\s*/, '');
+        const cleanLabel = rawLabel.replace(/^\*\s*/, '').replace(/^\[\d+\]\s*/, '');
         const tag = (typeof opt === 'object' && opt.tag) ? opt.tag : '';
         const isChecked = checkedState[idx];
         const checkMark = isChecked ? `${T.success}[x]${T.reset}` : `${T.dim}[ ]${T.reset}`;
@@ -362,7 +373,7 @@ function promptMultiSelect(options, promptText = 'Select Applications to Patch',
         }
       });
 
-      printHermesCard(rows, promptText, 'Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm', DEFAULT_CARD_WIDTH);
+      printHermesCard(rows, promptText, 'Use ↑/↓ to navigate, Space to toggle [x], Enter to confirm');
       printPromptBar('Space to toggle selection [x], Enter to execute patch on selected apps');
     }
 
@@ -465,7 +476,6 @@ module.exports = {
   printHermesCard,
   formatCardRow,
   printPromptBar,
-  printCompactMenuHeader,
   clearScreen,
   hideCursor,
   showCursor,
