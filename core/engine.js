@@ -1,9 +1,9 @@
 /**
  * BidiForge — Engine v3.0
  * Universal BiDi Compatibility Layer for Electron apps
- * Aggregates rules from rules/ and profiles from profiles/
+ * Aggregates rules from rules/ and profiles from profiles/ (including custom profiles)
  * 
- * @version 3.0.0
+ * @version 3.1.0
  * @author Jenzo0
  */
 
@@ -44,25 +44,31 @@ function loadRules() {
 }
 
 /**
- * Load matching application profile from profiles/ (Specific profiles first, generic fallback last)
+ * Load matching application profile from profiles/, profiles/custom/, or APPDATA
  */
 function loadProfile(appInfo = {}) {
-  const profilesDir = path.join(__dirname, '..', 'profiles');
+  const profileDirs = [
+    path.join(__dirname, '..', 'profiles', 'custom'),
+    path.join(process.env.APPDATA || '', 'BidiForge', 'profiles'),
+    path.join(__dirname, '..', 'profiles'),
+  ];
   
-  if (fs.existsSync(profilesDir)) {
-    const files = fs.readdirSync(profilesDir).filter(f => f.endsWith('.js') && f !== 'generic-electron.js');
-    for (const file of files) {
-      try {
-        const profile = require(path.join(profilesDir, file));
-        if (profile && typeof profile.match === 'function' && profile.match(appInfo)) {
-          return profile;
-        }
-      } catch (e) {}
+  for (const dir of profileDirs) {
+    if (fs.existsSync(dir)) {
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'generic-electron.js');
+      for (const file of files) {
+        try {
+          const profile = require(path.join(dir, file));
+          if (profile && typeof profile.match === 'function' && profile.match(appInfo)) {
+            return profile;
+          }
+        } catch (e) {}
+      }
     }
   }
   
   // Universal fallback profile
-  const genericPath = path.join(profilesDir, 'generic-electron.js');
+  const genericPath = path.join(__dirname, '..', 'profiles', 'generic-electron.js');
   if (fs.existsSync(genericPath)) {
     try { return require(genericPath); } catch (e) {}
   }

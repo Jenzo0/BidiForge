@@ -1,8 +1,8 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.0 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v3.1 Engine)
  * Universal BiDi Compatibility Layer for Electron
  * 
- * @version 3.0.0
+ * @version 3.1.0
  * @author Jenzo0
  */
 
@@ -18,8 +18,12 @@ const backup = require('./patcher/backup');
 const injector = require('./patcher/injector');
 const status = require('./core/status');
 const logger = require('./core/logger');
+const inspector = require('./core/inspector');
+const watcher = require('./core/watcher');
+const shell = require('./integrations/shell');
+const vault = require('./patcher/vault');
 
-const VERSION = '3.0.0';
+const VERSION = '3.1.0';
 const DEVELOPER = 'Jenzo0';
 
 // ANSI terminal color codes
@@ -56,8 +60,6 @@ function banner() {
 
 /**
  * Check if target application process is currently running
- * @param {object} appInfo - Application metadata
- * @returns {boolean} True if running
  */
 function isAppRunning(appInfo) {
   if (!appInfo || !appInfo.name) return false;
@@ -87,8 +89,6 @@ function isAppRunning(appInfo) {
 
 /**
  * Kill running application process to release ASAR file locks
- * @param {object} appInfo - Application metadata
- * @returns {boolean} True if a process was terminated
  */
 function killAppProcess(appInfo) {
   if (!appInfo || !appInfo.name) return false;
@@ -127,7 +127,6 @@ function killAppProcess(appInfo) {
 
 /**
  * Relaunch application process after patching
- * @param {object} appInfo - Application metadata
  */
 function relaunchAppProcess(appInfo) {
   if (!appInfo || !appInfo.path) return;
@@ -167,9 +166,6 @@ function relaunchAppProcess(appInfo) {
 
 /**
  * Main patch workflow with Safe Update Detection & Auto Repair
- * @param {string|object} target - Target app name, path, or app object
- * @param {boolean} relaunch - Whether to auto-relaunch process
- * @param {boolean} force - Force re-patch even if hash matches
  */
 async function patch(target = null, relaunch = true, force = false) {
   logger.init();
@@ -230,9 +226,10 @@ async function patch(target = null, relaunch = true, force = false) {
         throw new Error('Low structure confidence - incompatible app layout');
       }
       
-      console.log(`  ${C.dim}• [3/6] Creating SHA-256 backup...${C.reset}`);
+      console.log(`  ${C.dim}• [3/6] Creating SHA-256 backup vault snapshot...${C.reset}`);
       const bak = backup.create(asarPath, appInfo);
       if (!bak.success) throw new Error(`Backup failed: ${bak.error}`);
+      vault.createSnapshot(asarPath, appInfo);
       
       console.log(`  ${C.dim}• [4/6] Injecting BiDi engine (Developer: Jenzo0)...${C.reset}`);
       const inj = injector.inject(tempDir, appInfo);
@@ -285,7 +282,7 @@ async function patch(target = null, relaunch = true, force = false) {
 }
 
 /**
- * Scan installed applications and display clean formatted table with direct ASAR patch inspection & new colors
+ * Scan installed applications and display clean formatted table
  */
 function scan() {
   logger.init();
@@ -325,9 +322,44 @@ function scan() {
 }
 
 /**
- * Unified application selection handler with pre-patch checks, vendor update checks, process close, & relaunch
- * @param {object} rl - Readline interface
- * @param {object} app - Application object
+ * Run BiDi Diagnostic Health Inspector on target application(s)
+ * @param {string|object} target - Target application or query
+ */
+function runHealthInspection(target = null) {
+  banner();
+  console.log(`${C.cyan}• Running BiDi Diagnostic Health Inspector...${C.reset}\n`);
+  
+  let apps = detector.detectAll();
+  if (target && typeof target === 'string') {
+    apps = apps.filter(a => a.name.toLowerCase().includes(target.toLowerCase()) || a.path.toLowerCase().includes(target.toLowerCase()));
+  } else if (target && typeof target === 'object' && target.path) {
+    apps = [target];
+  }
+
+  if (apps.length === 0) {
+    console.log(`${C.yellow}✖ No applications found for health inspection.${C.reset}`);
+    return;
+  }
+
+  for (const app of apps) {
+    const report = inspector.inspectApp(app);
+    const scoreColor = report.score >= 80 ? C.green : (report.score >= 50 ? C.yellow : C.red);
+
+    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
+    console.log(` ${C.bold}App:${C.reset} ${C.white}${report.appName}${C.reset} (v${report.appVersion})`);
+    console.log(` ${C.bold}Health Score:${C.reset} ${scoreColor}${report.score}/100 (${report.grade})${C.reset}  —  ${C.bold}Status:${C.reset} ${scoreColor}${report.status}${C.reset}`);
+    console.log(`${C.cyan}────────────────────────────────────────────────────────────${C.reset}`);
+
+    report.checks.forEach(check => {
+      const symbol = check.passed ? `${C.green}✓${C.reset}` : `${C.red}✖${C.reset}`;
+      console.log(`  ${symbol} ${C.bold}${check.name}:${C.reset} ${check.detail}`);
+    });
+    console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}\n`);
+  }
+}
+
+/**
+ * Unified application selection handler
  */
 async function handleAppSelection(rl, app) {
   if (!app) return;
@@ -336,7 +368,6 @@ async function handleAppSelection(rl, app) {
   const currentHash = fs.existsSync(asarPath) ? detector.getFileHash(asarPath) : '';
   const updateCheck = status.checkSafeUpdateStatus(app.path, currentHash, app.version, asarPath);
 
-  // Check 1: Vendor Update Detection
   if (updateCheck.state === 'APP_UPDATED') {
     console.log(`\n  ${C.magenta}${C.bold}⚡ Vendor Application Update Detected!${C.reset}`);
     console.log(`  ${C.white}${app.name}${C.reset} was updated by vendor (${updateCheck.oldVersion ? 'v' + updateCheck.oldVersion : 'older'} ➔ v${app.version}).`);
@@ -355,7 +386,6 @@ async function handleAppSelection(rl, app) {
     return;
   }
 
-  // Check 2: Already Patched
   if (updateCheck.state === 'PATCHED_VERIFIED') {
     console.log(`\n  ${C.yellow}${C.bold}YES → Already patched${C.reset}`);
     console.log(`  ${C.white}${app.name}${C.reset} (v${app.version}) is currently patched & verified.`);
@@ -376,7 +406,6 @@ async function handleAppSelection(rl, app) {
     return;
   }
 
-  // Check 3: Process Running Check for Unpatched App
   const running = isAppRunning(app);
   if (running) {
     console.log(`\n  ${C.yellow}⚡ Notice: ${app.name} is currently running.${C.reset}`);
@@ -391,7 +420,6 @@ async function handleAppSelection(rl, app) {
 
 /**
  * Patch custom path specified by user
- * @param {string} customPath - Path to app folder or asar file
  */
 async function patchCustomPath(customPath) {
   if (!customPath || !fs.existsSync(customPath)) {
@@ -495,11 +523,14 @@ async function interactiveMenu() {
     console.log(`  ${C.cyan}[6]${C.reset} ${C.white}Rollback Application (Restore Original Backup)${C.reset}`);
     console.log(`  ${C.cyan}[7]${C.reset} ${C.white}Clean Temporary Files & Prune Old Backups${C.reset}`);
     console.log(`  ${C.cyan}[8]${C.reset} ${C.white}Run Diagnostic Test Suite${C.reset}`);
+    console.log(`  ${C.cyan}[9]${C.reset} ${C.white}Run BiDi Diagnostic Health Inspector (--health)${C.reset}`);
+    console.log(`  ${C.cyan}[10]${C.reset} ${C.white}Register Windows Explorer Context Menu (Right-Click Patch)${C.reset}`);
+    console.log(`  ${C.cyan}[11]${C.reset} ${C.white}Snapshot Restore Vault Manager (Multi-Version Rollback)${C.reset}`);
     console.log(`  ${C.yellow}[*]${C.reset} ${C.dim}Back to Main Menu${C.reset}`);
     console.log(`  ${C.red}[0]${C.reset} ${C.dim}Exit BidiForge${C.reset}`);
     console.log(`${C.cyan}══════════════════════════════════════════════════════════════${C.reset}`);
     
-    const choice = (await askQuestion(rl, `${C.yellow}Select an option [0-8, *]: ${C.reset}`)).trim();
+    const choice = (await askQuestion(rl, `${C.yellow}Select an option [0-11, *]: ${C.reset}`)).trim();
     console.log('');
     
     if (choice === '0') {
@@ -523,12 +554,7 @@ async function interactiveMenu() {
           console.log(`  ${C.red}[0]${C.reset} Exit BidiForge\n`);
           
           const ans = (await askQuestion(rl, `${C.yellow}Select App Number [1-${apps.length}], A for ALL (* Back, 0 Exit): ${C.reset}`)).trim();
-          
-          if (ans === '0') {
-            running = false;
-            console.log(`${C.cyan}Thank you for using BidiForge!${C.reset}`);
-            break;
-          }
+          if (ans === '0') { running = false; break; }
           if (ans === '*') break;
           
           if (ans.toUpperCase() === 'A') {
@@ -538,18 +564,8 @@ async function interactiveMenu() {
             }
           } else if (ans) {
             const num = parseInt(ans, 10);
-            let targetApp = null;
-            if (num > 0 && num <= apps.length) {
-              targetApp = apps[num - 1];
-            } else {
-              targetApp = apps.find(a => a.name.toLowerCase().includes(ans.toLowerCase()));
-            }
-            
-            if (targetApp) {
-              await handleAppSelection(rl, targetApp);
-            } else {
-              console.log(`${C.red}[X] No matching application found for selection.${C.reset}`);
-            }
+            let targetApp = (num > 0 && num <= apps.length) ? apps[num - 1] : apps.find(a => a.name.toLowerCase().includes(ans.toLowerCase()));
+            if (targetApp) await handleAppSelection(rl, targetApp);
           }
         }
         break;
@@ -559,77 +575,44 @@ async function interactiveMenu() {
         const apps = scan();
         if (apps.length > 0) {
           const ans = (await askQuestion(rl, `${C.yellow}Enter App Number [1-${apps.length}] (* Back, 0 Exit): ${C.reset}`)).trim();
-          if (ans === '0') {
-            running = false;
-            console.log(`${C.cyan}Thank you for using BidiForge!${C.reset}`);
-            break;
-          }
+          if (ans === '0') { running = false; break; }
           if (ans === '*') break;
-          
           const num = parseInt(ans, 10);
-          if (num > 0 && num <= apps.length) {
-            await handleAppSelection(rl, apps[num - 1]);
-          }
+          if (num > 0 && num <= apps.length) await handleAppSelection(rl, apps[num - 1]);
         }
         break;
       }
       
       case '3': {
         const confirmAll = (await askQuestion(rl, `${C.yellow}[?] Are you sure you want to patch ALL discovered applications? [Y/n]: ${C.reset}`)).trim();
-        if (confirmAll.toLowerCase() !== 'n') {
-          await patch(null, true, false);
-        }
+        if (confirmAll.toLowerCase() !== 'n') await patch(null, true, false);
         break;
       }
         
       case '4': {
         const nameQuery = (await askQuestion(rl, `${C.yellow}Enter application name to search (e.g. discord, slack, obsidian) (* Back, 0 Exit): ${C.reset}`)).trim();
-        if (nameQuery === '0') {
-          running = false;
-          console.log(`${C.cyan}Thank you for using BidiForge!${C.reset}`);
-          break;
-        }
+        if (nameQuery === '0') { running = false; break; }
         if (nameQuery === '*') break;
-        
         if (nameQuery) {
-          console.log(`${C.cyan}• Starting Universal Electron application scan for "${nameQuery}"...${C.reset}`);
           const apps = detector.detectAll().filter(a => a.name.toLowerCase().includes(nameQuery.toLowerCase()));
-          console.log(`${C.green}• Found ${apps.length} matching application(s)${C.reset}\n`);
-          if (apps.length > 0) {
-            apps.forEach((a, i) => console.log(`  ${C.cyan}[${i+1}]${C.reset} ${C.bold}${a.name}${C.reset} (v${a.version})`));
-            await handleAppSelection(rl, apps[0]);
-          }
+          if (apps.length > 0) await handleAppSelection(rl, apps[0]);
         }
         break;
       }
       
       case '5': {
         const customPath = (await askQuestion(rl, `${C.yellow}Enter direct application folder or ASAR file path (* Back, 0 Exit): ${C.reset}`)).trim();
-        if (customPath === '0') {
-          running = false;
-          console.log(`${C.cyan}Thank you for using BidiForge!${C.reset}`);
-          break;
-        }
+        if (customPath === '0') { running = false; break; }
         if (customPath === '*') break;
-        
-        if (customPath) {
-          await patchCustomPath(customPath);
-        }
+        if (customPath) await patchCustomPath(customPath);
         break;
       }
       
       case '6': {
         const appName = (await askQuestion(rl, `${C.yellow}Enter application name or path to rollback (* Back, 0 Exit): ${C.reset}`)).trim();
-        if (appName === '0') {
-          running = false;
-          console.log(`${C.cyan}Thank you for using BidiForge!${C.reset}`);
-          break;
-        }
+        if (appName === '0') { running = false; break; }
         if (appName === '*') break;
-        
-        if (appName) {
-          rollbackApp(appName);
-        }
+        if (appName) rollbackApp(appName);
         break;
       }
       
@@ -641,8 +624,32 @@ async function interactiveMenu() {
         runTests();
         break;
         
+      case '9':
+        runHealthInspection();
+        break;
+        
+      case '10': {
+        const regRes = shell.register();
+        if (regRes.success) {
+          console.log(`${C.green}✓ ${regRes.message}${C.reset}`);
+        } else {
+          console.log(`${C.red}✖ Registration failed: ${regRes.error}${C.reset}`);
+        }
+        break;
+      }
+
+      case '11': {
+        const snapshots = vault.listSnapshots();
+        console.log(`${C.cyan}• Vault Snapshot Registry (${snapshots.length} snapshots)${C.reset}\n`);
+        snapshots.forEach((s, idx) => {
+          console.log(`  ${C.cyan}[${idx+1}]${C.reset} ${C.white}${C.bold}${s.appName}${C.reset} (v${s.appVersion})  —  ID: ${C.yellow}${s.id}${C.reset}`);
+          console.log(`      ${C.dim}Date: ${new Date(s.createdAt).toLocaleString()} | SHA-256: ${s.hash.slice(0, 16)}...${C.reset}`);
+        });
+        break;
+      }
+        
       default:
-        console.log(`${C.red}Invalid selection. Please enter a choice between 0 and 8, or *.${C.reset}`);
+        console.log(`${C.red}Invalid selection. Please enter a choice between 0 and 11, or *.${C.reset}`);
     }
     
     if (running && choice !== '0') {
@@ -683,6 +690,44 @@ async function interactiveMenu() {
         await patch(args[1] || null);
         break;
         
+      case 'health':
+      case '--health':
+        runHealthInspection(args[1] || null);
+        break;
+
+      case 'watch':
+      case '--watch':
+      case '-w':
+        banner();
+        watcher.watch(args[1] || null);
+        break;
+
+      case 'register-shell':
+        banner();
+        console.log(shell.register().message);
+        break;
+
+      case 'unregister-shell':
+        banner();
+        console.log(shell.unregister().message);
+        break;
+
+      case 'vault':
+        banner();
+        if (args[1] === 'restore' && args[2]) {
+          const res = vault.restoreSnapshot(args[2]);
+          if (res.success) {
+            console.log(`${C.green}✓ Restored snapshot ${res.snapshot.id} for ${res.snapshot.appName}!${C.reset}`);
+          } else {
+            console.log(`${C.red}✖ Vault restoration failed: ${res.error}${C.reset}`);
+          }
+        } else {
+          const list = vault.listSnapshots(args[1] || '');
+          console.log(`Vault Snapshots (${list.length}):`);
+          list.forEach(s => console.log(`  ${s.id} | ${s.appName} v${s.appVersion} | ${s.createdAt}`));
+        }
+        break;
+        
       case 'rollback':
       case '--rollback':
       case '-r':
@@ -718,13 +763,17 @@ async function interactiveMenu() {
         console.log('Usage: node index.js [command] [options]');
         console.log('');
         console.log('Commands:');
-        console.log('  patch [app]     Patch all detected apps (or specific app)');
-        console.log('  scan            Scan and list detected Electron apps');
-        console.log('  status          Display patch status registry');
-        console.log('  rollback <app>  Rollback specified app to original backup');
-        console.log('  cleanup         Clean temporary files and prune old backups');
-        console.log('  repair [app]    Force re-patch/repair target applications');
-        console.log('  help            Show this help manual');
+        console.log('  patch [app]         Patch all detected apps (or specific app)');
+        console.log('  scan                Scan and list detected Electron apps');
+        console.log('  health [app]        Run BiDi Diagnostic Health Inspector');
+        console.log('  watch [app]         Start live hot-reload watcher');
+        console.log('  register-shell      Add right-click menu in Windows Explorer');
+        console.log('  unregister-shell    Remove right-click menu from Windows Explorer');
+        console.log('  vault [restore <id>] Manage multi-version snapshot restore vault');
+        console.log('  rollback <app>      Rollback specified app to original backup');
+        console.log('  cleanup             Clean temporary files and prune old backups');
+        console.log('  repair [app]        Force re-patch/repair target applications');
+        console.log('  help                Show this help manual');
         console.log('');
         break;
         
