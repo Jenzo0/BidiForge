@@ -31,7 +31,7 @@
 
 ### 🌟 Key Feature Highlights
 
-- **🪬 Hermes Agent TUI**: Responsive header auto-windowing, arrow-key cursor navigation, dynamic card rendering, and zero scrollback repetition.
+- **🪬 BidiForge TUI**: Responsive header auto-windowing, arrow-key cursor navigation, dynamic card rendering, and zero scrollback repetition.
 - **⚡ Safe Multi-Stage Repacker**: ASAR extraction, ES module & Webpack syntax validation, and Windows file-lock resilience (`safeRename`).
 - **🎨 Live Hot-Reload Watcher**: Real-time configuration watcher with customizable themes (`cyberpunk`, `matrix`, `dracula`, `amber`, `nordic`, `monokai`) for background auto-patching.
 - **🖱️ Windows Shell Integration**: One-click right-click context menu integration for instant application patching directly from File Explorer.
