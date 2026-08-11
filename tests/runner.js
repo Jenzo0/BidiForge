@@ -83,12 +83,24 @@ test('generateJS uses subtree MutationObserver without full-DOM polling', () => 
   assert(js.includes('MutationObserver'), 'Missing observer engine');
 });
 
+test('generateJS defines all helpers used by rules (ownText, firstStrong)', () => {
+  const js = engine.generateJS({ name: 'test' });
+  assert(js.includes('function ownText'), 'Missing ownText helper definition');
+  assert(js.includes('function firstStrong'), 'Missing firstStrong helper definition');
+});
+
 // Test Group 4: Injection & Snippet Building
 console.log('');
 console.log('[4/7] Testing Injection & Idempotency...');
 test('buildSnippet generates complete injection code with BidiForge markers', () => {
   const snippet = engine.buildSnippet('app', { name: 'testApp' });
   assert(snippet.includes('/*=== BidiForge'), 'Missing start marker');
+});
+
+test('buildSnippet is ESM-safe (falls back to appRef when require is unavailable)', () => {
+  const snippet = engine.buildSnippet('electron', { name: 'testApp' });
+  assert(snippet.includes('typeof require === "function"'), 'Missing ESM-safe require guard');
+  assert(snippet.includes('typeof electron !== "undefined"'), 'Missing appRef fallback');
 });
 
 test('strip removes previous BidiForge injections cleanly', () => {

@@ -133,6 +133,24 @@ function generateJS(appInfo = {}) {
     '  return m ? m[0] : "";',
     '}',
     
+    // Helper: own direct text (direct text nodes only, excludes descendants)
+    'function ownText(el){',
+    '  if(!el) return "";',
+    '  var s = "";',
+    '  for(var i=0; i<el.childNodes.length; i++){',
+    '    var n = el.childNodes[i];',
+    '    if(n.nodeType === 3 && n.nodeValue) s += n.nodeValue;',
+    '  }',
+    '  return s;',
+    '}',
+    
+    // Helper: first strong direction of text -> 'rtl' | 'ltr' | ''
+    'function firstStrong(text){',
+    '  var m = (text || "").match(/[' + RTL_RANGES.join('') + 'a-zA-Z]/);',
+    '  if(!m) return "";',
+    '  return rtlRegex.test(m[0]) ? "rtl" : "ltr";',
+    '}',
+    
     // Inject rule functions
     ruleJSParts.join(N10 + N10),
     
@@ -247,7 +265,9 @@ function buildSnippet(appRef = 'app', appInfo = {}) {
     `  }catch(_){}`,
     `}`,
     `try{`,
-    `  const electronObj = require('electron');`,
+    `  var electronObj = null;`,
+    `  if(typeof require === "function"){ try{ electronObj = require("electron"); }catch(_){} }`,
+    `  if(!electronObj && typeof ${appRef} !== "undefined"){ electronObj = ${appRef}; }`,
     `  const appObj = (electronObj && electronObj.app) ? electronObj.app : (typeof ${appRef} !== 'undefined' ? ${appRef} : null);`,
     `  const wcObj = electronObj ? electronObj.webContents : null;`,
     `  if(wcObj && typeof wcObj.getAllWebContents === 'function'){`,
