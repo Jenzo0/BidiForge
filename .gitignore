@@ -4,11 +4,14 @@ node_modules/
 # Logs
 logs/*.log
 *.log
+logs/
 
 # Backups & Data Store
 backups/*.bak
 backups/manifest.json
 backups/status.json
+# Runtime vault snapshots (copies of app binaries — never commit)
+backups/vault/
 
 # Temporary Files & Archives
 *.tmp
