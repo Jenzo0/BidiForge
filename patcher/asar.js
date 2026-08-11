@@ -1,8 +1,8 @@
 /**
- * BidiForge — ASAR Handler (v3.0 Engine)
+ * BidiForge — ASAR Handler (v4.0 Engine)
  * Safe ASAR extraction, atomic repacking, and verification
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Jenzo
  */
 

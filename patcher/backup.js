@@ -1,8 +1,8 @@
 /**
- * BidiForge — Backup Manager (v3.0 Engine)
+ * BidiForge — Backup Manager (v4.0 Engine)
  * Safe backup, manifest tracking, SHA-256 verification, rollback, and cleanup
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Jenzo
  */
 
@@ -12,7 +12,7 @@ const crypto = require('crypto');
 
 const BACKUP_DIR = path.join(__dirname, '..', 'backups');
 const MANIFEST_FILE = path.join(BACKUP_DIR, 'manifest.json');
-const ENGINE_VERSION = '3.0.0';
+const ENGINE_VERSION = '4.0.0';
 
 /**
  * Initialize backup directory and manifest

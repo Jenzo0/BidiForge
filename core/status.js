@@ -2,7 +2,7 @@
  * BidiForge — Status Manager & Safe Update Detection Engine
  * Track patch status of applications via direct ASAR inspection and SHA-256 hash manifest comparison
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Jenzo
  */
 
@@ -129,7 +129,7 @@ function setPatched(appPath, appInfo, patchInfo) {
   return update(appPath, {
     name: appInfo.name,
     version: appInfo.version,
-    patchVersion: '3.0.0',
+    patchVersion: '4.0.0',
     status: 'PATCHED',
     patchedAt: new Date().toISOString(),
     hash: patchInfo.hash,

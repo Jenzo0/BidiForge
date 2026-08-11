@@ -1,8 +1,8 @@
 /**
- * BidiForge — Runtime Structure Classifier (v3.0 Engine)
+ * BidiForge — Runtime Structure Classifier (v4.0 Engine)
  * Classifies Electron app runtime type, entry point, and safe injection locations
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Jenzo
  */
 

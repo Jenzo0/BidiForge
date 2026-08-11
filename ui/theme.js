@@ -1,8 +1,8 @@
 /**
- * BidiForge — Advanced Full-TUI Theme Engine (v3.5 Engine)
+ * BidiForge — Advanced Full-TUI Theme Engine (v4.0 Engine)
  * Manages immersive full-terminal color schemes, active palette selection, and config persistence
  * 
- * @version 3.5.0
+ * @version 4.0.0
  * @author Jenzo0
  */
 

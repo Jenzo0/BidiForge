@@ -1,8 +1,8 @@
 /**
- * BidiForge — Diagnostic Health Inspector (v3.1 Engine)
+ * BidiForge — Diagnostic Health Inspector (v4.0 Engine)
  * Inspects Electron application entry structure and calculates BiDi Health Score (0-100%)
  * 
- * @version 3.1.0
+ * @version 4.0.0
  * @author Jenzo0
  */
 

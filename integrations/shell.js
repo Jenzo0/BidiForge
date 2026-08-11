@@ -2,7 +2,7 @@
  * BidiForge — Windows Shell Integration (v3.7.2 Engine)
  * Safe Windows Explorer Context Menu integration (NO double-click hijacking)
  * 
- * @version 3.7.2
+ * @version 4.0.0
  * @author Jenzo0
  */
 

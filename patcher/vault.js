@@ -1,8 +1,8 @@
 /**
- * BidiForge — Vault Manager (v3.1 Engine)
+ * BidiForge — Vault Manager (v4.0 Engine)
  * Multi-version snapshot backup vault with SHA-256 integrity verification
  * 
- * @version 3.1.0
+ * @version 4.0.0
  * @author Jenzo0
  */
 

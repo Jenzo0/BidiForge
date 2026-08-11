@@ -1,8 +1,8 @@
 /**
- * BidiForge — Universal Electron Detector (v3.0 Engine)
+ * BidiForge — Universal Electron Detector (v4.0 Engine)
  * High-performance, non-destructive discovery engine for Windows Electron apps
  * 
- * @version 3.0.0
+ * @version 4.0.0
  * @author Jenzo
  */
 

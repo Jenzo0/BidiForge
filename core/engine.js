@@ -1,9 +1,9 @@
 /**
- * BidiForge — Engine v3.0
+ * BidiForge — Engine v4.0
  * Universal BiDi Compatibility Layer for Electron apps
  * Aggregates rules from rules/ and profiles from profiles/ (including custom profiles)
  * 
- * @version 3.1.0
+ * @version 4.0.0
  * @author Jenzo0
  */
 

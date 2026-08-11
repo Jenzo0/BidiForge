@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v3.9.0 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v4.0 Engine)
  * Universal BiDi Compatibility Layer for Electron
  * Hermes Agent TUI Engine: Dynamic Card Width (100% Straight Borders), Animated Fast Scan, & Asterisk-Free Back Options
  * 
- * @version 3.9.0
+ * @version 4.0.0
  * @author Jenzo0
  */
 
