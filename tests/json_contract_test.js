@@ -34,7 +34,7 @@ test('scan --json returns valid JSON schema', () => {
   
   assert.strictEqual(data.success, true);
   assert.strictEqual(data.operation, 'scan');
-  assert.strictEqual(data.version, '4.0.0');
+  assert.strictEqual(data.version, '4.0.2');
   assert(data.timestamp, 'Missing timestamp');
   assert(Array.isArray(data.data.apps), 'Expected apps array');
   assert.strictEqual(data.error, null);
@@ -47,7 +47,7 @@ test('status --json returns valid engine status JSON', () => {
   
   assert.strictEqual(data.success, true);
   assert.strictEqual(data.operation, 'status');
-  assert.strictEqual(data.version, '4.0.0');
+  assert.strictEqual(data.version, '4.0.2');
   assert(typeof data.data.discoveredAppsCount === 'number', 'Expected numeric app count');
 });
 
@@ -81,7 +81,7 @@ test('invalid operation returns structured JSON failure and exit code 2', () => 
 test('existing human-readable CLI help command still works', () => {
   const stdout = execSync('node index.js help', { cwd: rootDir, encoding: 'utf8' });
   assert(stdout.includes('Usage: node index.js'), 'Help output should be human readable');
-  assert(stdout.includes('v4.0.0'), 'Header version should be present');
+  assert(stdout.includes('v4.0.2'), 'Header version should be present');
 });
 
 console.log('\n========================================');

@@ -1,9 +1,9 @@
 /**
- * BidiForge — Main CLI Entry & Interactive Engine (v4.0 Engine)
+ * BidiForge — Main CLI Entry & Interactive Engine (v4.0.2 Engine)
  * Universal BiDi Compatibility Layer for Electron
  * Hermes Agent TUI Engine: Dynamic Card Width (100% Straight Borders), Animated Fast Scan, & Asterisk-Free Back Options
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 
@@ -27,7 +27,7 @@ const updater = require('./core/updater');
 const themeEngine = require('./ui/theme');
 const { promptSelect, promptMultiSelect, createSpinner, printHermesCard, formatCardRow, printPromptBar, clearScreen, beep } = require('./ui/menu');
 
-const VERSION = '4.0.0';
+const VERSION = '4.0.2';
 const DEVELOPER = 'Jenzo0';
 let _cachedAppsCount = null;
 

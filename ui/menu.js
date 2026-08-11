@@ -1,8 +1,8 @@
 /**
- * BidiForge — Hermes Agent Card TUI Engine (v4.0.0 Engine)
+ * BidiForge — Hermes Agent Card TUI Engine (v4.0.2 Engine)
  * Global Border & Layout Geometry Engine: Single-Page Viewport Control & Zero Scrollback Repetition
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 

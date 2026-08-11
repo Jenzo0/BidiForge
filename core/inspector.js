@@ -1,10 +1,10 @@
 /**
- * BidiForge — Diagnostic Health Inspector (v4.0 Engine)
+ * BidiForge — Diagnostic Health Inspector (v4.0.2 Engine)
  * Inspects Electron application entry structure and calculates BiDi Health Score (0-100%)
  * Includes LIVE engine execution simulation to catch runtime-dead injections
  * (e.g. missing helpers) that static marker checks cannot detect.
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 

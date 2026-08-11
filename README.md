@@ -3,7 +3,7 @@
 
 **Universal BiDi Compatibility Layer for Electron Applications**
 
-[![Version](https://img.shields.io/badge/Version-4.0.0-00d4ff?style=for-the-badge&logo=semanticrelease)](https://github.com/Jenzo0/BidiForge/releases)
+[![Version](https://img.shields.io/badge/Version-4.0.2-00d4ff?style=for-the-badge&logo=semanticrelease)](https://github.com/Jenzo0/BidiForge/releases)
 [![Node](https://img.shields.io/badge/Node.js-16+-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](LICENSE)
@@ -82,7 +82,7 @@ Watch mode that automatically re-patches apps in real-time as configurations cha
 Right-click any Electron app folder in Explorer → "Patch with BidiForge".
 
 ### 🩺 Diagnostic Health Inspector
-Full diagnostic suite with scoring to verify patch integrity, structure compatibility, and BiDi injection status.
+7-check scoring suite — including a **live engine-execution simulation** that extracts the injected BiDi JS and actually runs it in an isolated VM to prove it flips Arabic text to `dir="rtl"` (catches broken engines that static marker checks miss).
 
 ### 🎨 Themeable Hermes Agent TUI
 Beautiful terminal interface with arrow-key navigation, animated spinners, dynamic card rendering, and multiple color themes.
@@ -201,8 +201,8 @@ node index.js status --json
 {
   "success": true,
   "operation": "scan",
-  "version": "4.0.0",
-  "timestamp": "2026-08-08T20:00:00.000Z",
+  "version": "4.0.2",
+  "timestamp": "2026-08-11T20:00:00.000Z",
   "data": {
     "apps": [
       {
@@ -341,7 +341,7 @@ npm test
 
 ```
 ========================================
-       BIDIFORGE TEST SUITE v4.0.0      
+       BIDIFORGE TEST SUITE v4.0.2      
 ========================================
 
   ✓ detectAll returns an array of Electron apps
@@ -351,17 +351,23 @@ npm test
   ✓ loadProfile matches application profiles correctly
   ✓ generateCSS aggregates CSS from all rules
   ✓ generateJS uses subtree MutationObserver without full-DOM polling
+  ✓ generateJS defines all helpers used by rules (ownText, firstStrong)
   ✓ buildSnippet generates complete injection code with BidiForge markers
+  ✓ buildSnippet is ESM-safe (falls back to appRef when require is unavailable)
   ✓ strip removes previous BidiForge injections cleanly
   ✓ backup.init initializes backups folder and manifest with engine version
   ✓ validateSyntax passes for valid JavaScript code
   ✓ inspector.inspectApp generates health score report
+  ✓ inspector LIVE sim runs fixed engine and flips Arabic element to rtl
+  ✓ inspector LIVE sim detects broken engine (missing firstStrong/ownText helpers)
+  ✓ inspector detects ESM-unsafe injection hook (require unavailable in ES modules)
   ✓ vault.getManifest initializes snapshot manifest
   ✓ shell.register generates valid Windows registry commands
   ✓ border_test suite passes all 5 alignment assertions
+  ✓ json_contract_test suite passes all 5 schema assertions
 
 ========================================
-RESULTS: 15 PASSED, 0 FAILED
+RESULTS: 21 PASSED, 0 FAILED
 ========================================
 ```
 

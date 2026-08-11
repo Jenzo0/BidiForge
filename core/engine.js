@@ -1,9 +1,9 @@
 /**
- * BidiForge — Engine v4.0
+ * BidiForge — Engine v4.0.2
  * Universal BiDi Compatibility Layer for Electron apps
  * Aggregates rules from rules/ and profiles from profiles/ (including custom profiles)
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 
@@ -120,7 +120,7 @@ function generateJS(appInfo = {}) {
   }
   
   return [
-    '/* BidiForge BiDi Compatibility Engine v4.0.0 - Developer: Jenzo0 */',
+    '/* BidiForge BiDi Compatibility Engine v4.0.2 - Developer: Jenzo0 */',
     '(function(){',
     'if(window.__bidiForge_installed) return;',
     'window.__bidiForge_installed = true;',

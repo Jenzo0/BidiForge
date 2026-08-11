@@ -21,7 +21,7 @@ Every JSON operation returns this envelope (built by `core/bridge.js` `createRes
 {
   "success": true,
   "operation": "scan",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:28.741Z",
   "data": { },
   "error": null
@@ -30,7 +30,7 @@ Every JSON operation returns this envelope (built by `core/bridge.js` `createRes
 
 - `success` — `true` on success, `false` on failure.
 - `operation` — command name (`scan`, `status`, `patch`, `repair`, `rollback`, `health`, `cleanup`).
-- `version` — engine version (`4.0.0`).
+- `version` — engine version (`4.0.2`).
 - `timestamp` — ISO-8601 UTC timestamp of the response.
 - `data` — payload object on success; **`null` on failure**.
 - `error` — **`null` on success**; on failure: `{ "code": "OPERATION_FAILED" | ..., "message": "..." }`.
@@ -52,7 +52,7 @@ Every JSON operation returns this envelope (built by `core/bridge.js` `createRes
 {
   "success": true,
   "operation": "scan",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:28.741Z",
   "data": {
     "apps": [
@@ -78,10 +78,10 @@ Every JSON operation returns this envelope (built by `core/bridge.js` `createRes
 {
   "success": true,
   "operation": "status",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:33.629Z",
   "data": {
-    "engineVersion": "4.0.0",
+    "engineVersion": "4.0.2",
     "discoveredAppsCount": 7,
     "activeTheme": "⚡ Cyberpunk Cyan (Default)",
     "snapshotVaultCount": 13,
@@ -99,7 +99,7 @@ Every JSON operation returns this envelope (built by `core/bridge.js` `createRes
 {
   "success": true,
   "operation": "patch",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:00.000Z",
   "data": {
     "application": "Discord",
@@ -127,7 +127,7 @@ Same shape and semantics as `patch`, with `"operation": "repair"`. Use `repair` 
 {
   "success": true,
   "operation": "rollback",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:00.000Z",
   "data": {
     "application": "Discord",
@@ -145,7 +145,7 @@ Missing target → `success: false`, `error: { code: "INVALID_ARGUMENTS", ... }`
 {
   "success": true,
   "operation": "health",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:00.000Z",
   "data": {
     "report": {
@@ -180,7 +180,7 @@ No apps found → `success: false`, `error: { code: "NO_APPS_FOUND", ... }`, exi
 {
   "success": true,
   "operation": "cleanup",
-  "version": "4.0.0",
+  "version": "4.0.2",
   "timestamp": "2026-08-11T14:30:00.000Z",
   "data": {
     "result": { "success": true, "deleted": [ "C:\\...\\tmp-workspace" ], "kept": [ "C:\\...\\backups\\app.asar.bak" ] }

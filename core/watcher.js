@@ -1,8 +1,8 @@
 /**
- * BidiForge — Live Hot-Reload Watcher (v4.0 Engine)
+ * BidiForge — Live Hot-Reload Watcher (v4.0.2 Engine)
  * Watches rules/ and profiles/ directories and hot-reloads BiDi patches on target applications
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 

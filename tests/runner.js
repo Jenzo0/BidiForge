@@ -1,5 +1,5 @@
 /**
- * BidiForge — Diagnostic Test Runner (v4.0 Engine)
+ * BidiForge — Diagnostic Test Runner (v4.0.2 Engine)
  * Runs unit test suite for BidiForge modules
  */
 
@@ -31,7 +31,7 @@ function test(name, fn) {
 }
 
 console.log('========================================');
-console.log('       BIDIFORGE TEST SUITE v4.0.0      ');
+console.log('       BIDIFORGE TEST SUITE v4.0.2      ');
 console.log('========================================');
 
 // Test Group 1: Detector Engine

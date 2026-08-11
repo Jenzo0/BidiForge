@@ -1,8 +1,8 @@
 /**
- * BidiForge — Injector (v4.0 Engine)
+ * BidiForge — Injector (v4.0.2 Engine)
  * Injects aggregated BiDi rules and profile engine into Electron main process
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo
  */
 

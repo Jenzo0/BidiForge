@@ -1,14 +1,14 @@
 /**
- * BidiForge — GitHub Release & Version Checker (v4.0 Engine)
+ * BidiForge — GitHub Release & Version Checker (v4.0.2 Engine)
  * Checks for new BidiForge updates, releases, and patch manifests
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 
 const https = require('https');
 
-const CURRENT_VERSION = '4.0.0';
+const CURRENT_VERSION = '4.0.2';
 const GITHUB_REPO = 'Jenzo0/BidiForge';
 
 /**

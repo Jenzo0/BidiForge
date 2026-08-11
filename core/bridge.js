@@ -1,8 +1,8 @@
 /**
- * BidiForge — Engine Bridge (v4.0.0 Engine)
+ * BidiForge — Engine Bridge (v4.0.2 Engine)
  * Machine-Readable JSON API & Contract Bridge for Native GUI Integrations
  * 
- * @version 4.0.0
+ * @version 4.0.2
  * @author Jenzo0
  */
 
@@ -18,7 +18,7 @@ const vault = require('../patcher/vault');
 const shell = require('../integrations/shell');
 const themeEngine = require('../ui/theme');
 
-const VERSION = '4.0.0';
+const VERSION = '4.0.2';
 
 /**
  * Format standardized JSON response envelope
