@@ -135,6 +135,36 @@ test('inspector.inspectApp generates health score report', () => {
   assert(typeof rep.score === 'number', 'Expected numeric health score');
 });
 
+test('inspector LIVE sim runs fixed engine and flips Arabic element to rtl', () => {
+  const js = engine.generateJS({ name: 'test' });
+  const sim = inspector.simulateEngineExecution(js);
+  assert.strictEqual(sim.installed, true, 'Engine should install in sandbox');
+  assert.strictEqual(sim.rtlProcessed, true, 'Engine should set dir=rtl on Arabic element');
+});
+
+test('inspector LIVE sim detects broken engine (missing firstStrong/ownText helpers)', () => {
+  const js = engine.generateJS({ name: 'test' });
+  const stripHelper = (src, name) => {
+    const start = src.indexOf('function ' + name);
+    if (start === -1) return src;
+    const end = src.indexOf('\n}', start);
+    if (end === -1) return src;
+    return src.slice(0, start) + src.slice(end + 2);
+  };
+  const broken = stripHelper(stripHelper(js, 'ownText'), 'firstStrong');
+  const sim = inspector.simulateEngineExecution(broken);
+  assert.strictEqual(sim.installed, true, 'Broken engine still sets the installed flag');
+  assert.strictEqual(sim.rtlProcessed, false, 'Broken engine must NOT produce dir=rtl');
+});
+
+test('inspector detects ESM-unsafe injection hook (require unavailable in ES modules)', () => {
+  const oldStyle = 'const electronObj = require("electron");';
+  const newSnippet = engine.buildSnippet('electron', { name: 'test' });
+  assert.strictEqual(inspector.inspectMainProcessHook(oldStyle).esmSafe, false, 'Old require-only hook should fail ESM check');
+  assert.strictEqual(inspector.inspectMainProcessHook(newSnippet).esmSafe, true, 'New snippet should pass ESM check');
+  assert.strictEqual(inspector.inspectMainProcessHook(newSnippet).hasHook, true, 'New snippet should contain the hook');
+});
+
 test('vault.getManifest initializes snapshot manifest', () => {
   const manifest = vault.getManifest();
   assert(Array.isArray(manifest.snapshots), 'Expected snapshots array');
