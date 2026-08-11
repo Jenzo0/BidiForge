@@ -1,7 +1,19 @@
 <div align="center">
+
 # 🪬 BidiForge
 
-**Universal BiDi Compatibility Layer for Electron Applications**
+**Fix broken Arabic & RTL text in Discord, VS Code, and 100+ Electron apps — in one command.**
+
+<br>
+
+```bash
+git clone https://github.com/Jenzo0/BidiForge.git && cd BidiForge && npm install
+node index.js scan            # 1️⃣ find your Electron apps
+node index.js patch discord   # 2️⃣ patch one (or all)
+node index.js health discord  # 3️⃣ verify with a live engine check
+```
+
+<br>
 
 [![Version](https://img.shields.io/badge/Version-4.0.2-00d4ff?style=for-the-badge&logo=semanticrelease)](https://github.com/Jenzo0/BidiForge/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/Jenzo0/BidiForge?style=for-the-badge&logo=github&color=gold&logoColor=white)](https://github.com/Jenzo0/BidiForge/stargazers)
@@ -10,13 +22,34 @@
 [![Node](https://img.shields.io/badge/Node.js-16+-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](LICENSE)
+[![Discussions](https://img.shields.io/badge/Discussions-Join%20the%20chat-5865F2?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Jenzo0/BidiForge/discussions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
-*A powerful Windows CLI tool that patches Electron desktop applications to render Arabic & RTL text correctly — with automated backup, ASAR integrity validation, and instant rollback.*
+*A universal BiDi compatibility layer for Electron on Windows — surgical ASAR patching, automated backups, instant rollback, and a health inspector that verifies the engine actually runs.*
 
-[**Getting Started**](#-quick-start) · [**Screenshots**](#-interface-screenshots--features) · [**Features**](#-features) · [**Compatibility**](#-compatibility-status) · [**Usage**](#-usage) · [**Architecture**](#-architecture)
+[**The Problem**](#-the-problem) · [**Quick Start**](#-quick-start) · [**Screenshots**](#-interface-screenshots--features) · [**Features**](#-features) · [**Compatibility**](#-compatibility-status) · [**Usage**](#-usage) · [**Community**](#-community)
 
 </div>
+
+---
+
+## 🌍 The Problem
+
+Over **70% of modern desktop applications** are built on Electron — Discord, VS Code, Obsidian, Slack, Notion, and hundreds more. Most of them **render Arabic, Hebrew, Persian, and Urdu incorrectly out of the box** — a daily struggle for **400+ million** speakers.
+
+| 🚫 Without BidiForge | ✅ With BidiForge |
+|---|---|
+| `م ر ح ب ا` — disconnected letters | `مرحبا` — properly connected Arabic |
+| `!dlrow ,olleH مرحبا` — reversed mixed text | `مرحبا, Hello world!` — natural BiDi flow |
+| Broken UI alignment in RTL contexts | Contextual RTL layout + direction injection |
+
+**How it works in 3 steps:**
+
+1. **Scan** — BidiForge finds every Electron app on your system.
+2. **Patch** — it surgically injects an RTL engine into the app's ASAR archive. No source code, no rebuild, no waiting for upstream fixes.
+3. **Verify** — the live health check proves the engine actually flips Arabic text to `dir="rtl"`.
+
+If an app update overwrites your patch, **BidiForge detects it and auto-repairs**. Every patch is fully backed up — **instant rollback** with one command.
 
 ---
 
@@ -38,22 +71,6 @@
 - **⚡ Safe Multi-Stage Repacker**: ASAR extraction, ES module & Webpack syntax validation, and Windows file-lock resilience (`safeRename`).
 - **🎨 Live Hot-Reload Watcher**: Real-time configuration watcher with customizable themes (`cyberpunk`, `matrix`, `dracula`, `amber`, `nordic`, `monokai`) for background auto-patching.
 - **🖱️ Windows Shell Integration**: One-click right-click context menu integration for instant application patching directly from File Explorer.
-
----
-
-## 🌍 The Problem
-
-Over **70% of modern desktop applications** are built on Electron — Discord, VS Code, Obsidian, Slack, Notion, and hundreds more. But most of them **fail** at rendering Right-to-Left (RTL) and Bidirectional (BiDi) text out of the box.
-
-For **400+ million** Arabic, Hebrew, Persian, and Urdu speakers, this means:
-
-| Without BidiForge | With BidiForge |
-|---|---|
-| `م ر ح ب ا` disconnected letters | `مرحبا` properly connected Arabic |
-| `!dlrow ,olleH مرحبا` reversed mixed text | `مرحبا, Hello world!` natural BiDi flow |
-| Broken UI alignment in RTL contexts | Contextual RTL layout and text direction injection |
-
-**BidiForge surgically patches these apps at the ASAR level** — no source code access needed, no app rebuilds, no waiting for upstream fixes.
 
 ---
 
@@ -373,6 +390,16 @@ npm test
 RESULTS: 21 PASSED, 0 FAILED
 ========================================
 ```
+
+---
+
+## 💬 Community
+
+Questions, ideas, or need help patching an app that isn't in the list?
+
+- 💬 **[GitHub Discussions](https://github.com/Jenzo0/BidiForge/discussions)** — ask questions, share patch results, request new app profiles
+- 🐛 **[Issues](https://github.com/Jenzo0/BidiForge/issues)** — bug reports and feature requests
+- ⭐ **Star the repo** — it helps other people discover BidiForge
 
 ---
 
