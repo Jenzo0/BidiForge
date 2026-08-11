@@ -8,9 +8,9 @@
 
 ```bash
 git clone https://github.com/Jenzo0/BidiForge.git && cd BidiForge && npm install
-node index.js scan            # 1️⃣ find your Electron apps
-node index.js patch discord   # 2️⃣ patch one (or all)
-node index.js health discord  # 3️⃣ verify with a live engine check
+node index.js scan                # 1️⃣ find your Electron apps
+node index.js patch discord       # 2️⃣ patch one (or all)
+node index.js health discord      # 3️⃣ verify with a live engine check
 ```
 
 <br>
