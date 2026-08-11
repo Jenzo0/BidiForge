@@ -39,11 +39,16 @@ Over **70% of modern desktop applications** are built on Electron — Discord, V
 
 <div align="center">
 
-**Real Discord chat — the same messages, before and after one BidiForge command:**
+**Real apps, the same messages — before and after one BidiForge command** (Discord chat, top · OpenCode AI Desktop chat, bottom):
 
 | 🚫 Without BidiForge | ✅ With BidiForge |
 |:---:|:---:|
 | <img src="docs/images/before-after/discord-before.png" width="460"> | <img src="docs/images/before-after/discord-after.png" width="460"> |
+| <img src="docs/images/before-after/opencode-before.png" width="460"> | <img src="docs/images/before-after/opencode-after.png" width="460"> |
+
+**Same fix in OpenCode AI Desktop — watch it happen (animated GIF, 2.7s):**
+
+<img src="docs/images/before-after/opencode-before-after.gif" width="620">
 
 </div>
 
