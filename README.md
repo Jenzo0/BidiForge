@@ -4,6 +4,9 @@
 **Universal BiDi Compatibility Layer for Electron Applications**
 
 [![Version](https://img.shields.io/badge/Version-4.0.2-00d4ff?style=for-the-badge&logo=semanticrelease)](https://github.com/Jenzo0/BidiForge/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/Jenzo0/BidiForge?style=for-the-badge&logo=github&color=gold&logoColor=white)](https://github.com/Jenzo0/BidiForge/stargazers)
+[![GitHub Downloads](https://img.shields.io/github/downloads/Jenzo0/BidiForge/total?style=for-the-badge&logo=github&color=blue&logoColor=white)](https://github.com/Jenzo0/BidiForge/releases)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/Jenzo0/BidiForge?style=for-the-badge&logo=git&color=orange)](https://github.com/Jenzo0/BidiForge/commits)
 [![Node](https://img.shields.io/badge/Node.js-16+-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com/windows)
 [![License](https://img.shields.io/badge/License-MIT-F7DF1E?style=for-the-badge)](LICENSE)
