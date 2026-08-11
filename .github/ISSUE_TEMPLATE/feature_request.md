@@ -1,19 +1,23 @@
 ---
-name: Feature request
-about: Suggest an idea or application profile for BidiForge
-title: '[FEAT] '
-labels: 'enhancement'
+name: 💡 Feature request
+about: Suggest an idea for BidiForge
+title: "[Feature] "
+labels: enhancement
 assignees: ''
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is.
+## 🎯 Problem it solves
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+<!-- What pain point does this address? Who is affected? -->
 
-**Describe alternatives you've considered**
-A clear description of any alternative solutions or features considered.
+## 🚀 Proposed solution
 
-**Additional Context**
-Add any other context or screenshots about the feature request here.
+<!-- Describe the feature you'd like, with as much detail as you can. -->
+
+## 🔀 Alternatives considered
+
+<!-- Other ways you tried or thought of to solve this. -->
+
+## 📋 Additional context
+
+<!-- Screenshots, mockups, links, or anything else that helps. -->

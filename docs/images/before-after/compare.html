@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>BidiForge before/after verification</title>
+<style>
+  body { background: #1e1f22; color: #fff; font-family: sans-serif; margin: 0; padding: 16px; }
+  h2 { text-align: center; }
+  .row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .card { background: #2b2d31; border-radius: 8px; padding: 12px; }
+  .card h3 { margin: 0 0 8px; text-align: center; }
+  .bad { color: #f23f43; } .good { color: #23a559; }
+  img { max-width: 520px; border-radius: 6px; display: block; }
+</style>
+</head>
+<body>
+  <h2>🪬 Discord Arabic — Before vs After</h2>
+  <div class="row">
+    <div class="card">
+      <h3 class="bad">🚫 BEFORE — بدون BidiForge (العربية شمال)</h3>
+      <img src="discord-before.png" alt="before">
+    </div>
+    <div class="card">
+      <h3 class="good">✅ AFTER — مع BidiForge (العربية يمين RTL)</h3>
+      <img src="discord-after.png" alt="after">
+    </div>
+  </div>
+</body>
+</html>

@@ -1,27 +1,48 @@
 ---
-name: Bug report
-about: Create a report to help us improve BidiForge
-title: '[BUG] '
-labels: 'bug'
+name: 🐛 Bug report
+about: Report broken Arabic/RTL rendering or a BidiForge failure
+title: "[Bug] "
+labels: bug
 assignees: ''
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## 📱 App Information
 
-**Electron Application Info**
-- Application Name (e.g. OpenCode, Obsidian, Discord):
-- Application Version:
-- OS Version (e.g. Windows 11 23H2):
+- **App name:** (e.g., Discord)
+- **App version:** (e.g., 1.0.9251)
+- **BidiForge version:** (e.g., 4.0.2 — check `node index.js status --json`)
+- **Windows version:** (e.g., Windows 11 23H2)
+- **Node.js version:** (`node -v`)
 
-**Steps to Reproduce**
-Steps to reproduce the behavior:
-1. Open '...'
-2. Type '...'
-3. See error
+## 🐛 What happened?
 
-**Expected Behavior**
-A clear description of what you expected to happen.
+<!-- Describe the problem clearly. What did you expect, and what actually happened? -->
 
-**Screenshots / Logs**
-If applicable, add screenshots or console output from `logs/`.
+## 📸 Screenshots
+
+<!-- Drag & drop screenshots here — Arabic text rendering before/after patching, if possible. -->
+
+## 🔁 Steps to reproduce
+
+1.
+2.
+3.
+
+## 🩺 Health report
+
+<!-- Run this and paste the output: -->
+```bash
+node index.js health <app-name> --json
+```
+
+```json
+{
+  "paste": "output here"
+}
+```
+
+## ✅ What should have happened?
+
+## 💡 Additional context
+
+<!-- Any logs from `logs/`, error messages, or notes about what you already tried. -->

@@ -37,6 +37,16 @@ node index.js health discord  # 3️⃣ verify with a live engine check
 
 Over **70% of modern desktop applications** are built on Electron — Discord, VS Code, Obsidian, Slack, Notion, and hundreds more. Most of them **render Arabic, Hebrew, Persian, and Urdu incorrectly out of the box** — a daily struggle for **400+ million** speakers.
 
+<div align="center">
+
+**Real Discord chat — the same messages, before and after one BidiForge command:**
+
+| 🚫 Without BidiForge | ✅ With BidiForge |
+|:---:|:---:|
+| <img src="docs/images/before-after/discord-before.png" width="460"> | <img src="docs/images/before-after/discord-after.png" width="460"> |
+
+</div>
+
 | 🚫 Without BidiForge | ✅ With BidiForge |
 |---|---|
 | `م ر ح ب ا` — disconnected letters | `مرحبا` — properly connected Arabic |
